@@ -6,10 +6,12 @@ include $(TOP)/configure/CONFIG
 
 #LIBRARY_IOC_WIN32 += andor3
 LIBRARY_IOC_Linux += andor3
+LIBRARY_IOC_WIN32 += andor3
 LIB_SRCS += andor3.cpp
 
 #PROD_IOC_WIN32 += andor3App
 PROD_IOC_Linux += andor3App
+PROD_IOC_WIN32 += andor3App
 
 # <name>.dbd will be created from <name>Include.dbd
 DBD += andor3App.dbd
@@ -20,9 +22,16 @@ PROD_SRCS += andor3App_registerRecordDeviceDriver.cpp andor3AppMain.cpp
 
 # Add locally compiled object code
 PROD_LIBS += andor3
+PROD_LIBS_Linux += atcore
+PROD_LIBS_WIN32 += atcorem
+PROD_LIBS_WIN32 += atmcd64m
 
-# Add system libraries
-PROD_SYS_LIBS += atcore
+ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
+STATIC_BUILD=NO
+else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
+STATIC_BUILD=NO
+endif
+
 
 include $(TOP)/ADApp/commonDriverMakefile
 
