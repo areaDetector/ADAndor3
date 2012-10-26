@@ -418,7 +418,7 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
     static const char* functionName = "setFeature";
 
     char   featureName[64];
-    int    status;
+    int    status=0;
     int    i_value;
     AT_64  i_min;
     AT_64  i_max;
@@ -614,13 +614,17 @@ int andor3::allocateBuffers(void)
     this->drvBuffers = (AT_U8 **)calloc(this->maxFrames, sizeof(AT_U8 *));
     if(this->drvBuffers) {
         for(int x = 0; x < this->maxFrames; x++) {
-            /* allocate 8 byte aligned buffer */
-            if(!posix_memalign((void **)&drvBuffers[x], 8, size)) {
-                //status |= AT_QueueBuffer(this->handle,
-                //                         drvBuffers[x], (int)size);
-            } else {   
-                drvBuffers[x] = NULL;
-            }
+            #ifdef _WIN32
+               drvBuffers[x] = (AT_U8*)_aligned_malloc(size, 8);
+            #else
+                /* allocate 8 byte aligned buffer */
+                if(!posix_memalign((void **)&drvBuffers[x], 8, size)) {
+                    //status |= AT_QueueBuffer(this->handle,
+                    //                         drvBuffers[x], (int)size);
+                } else {   
+                    drvBuffers[x] = NULL;
+                }
+            #endif
         }
     }
 
