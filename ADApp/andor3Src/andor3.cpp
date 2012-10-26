@@ -146,7 +146,7 @@ static void c_temptask(void *arg)
   p->tempTask();
 }
 
-static int c_getfeature(AT_H handle, const AT_WC *feature, void *context)
+static int AT_EXP_CONV c_getfeature(AT_H handle, const AT_WC *feature, void *context)
 {
   featureInfo *info = (featureInfo *)context;
   return info->camera->getFeature(feature, info->type, info->paramIndex);
