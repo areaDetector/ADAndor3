@@ -12,19 +12,25 @@ include $(TOP)/configure/CONFIG
 #INC += ATMCD32D.h
 INC += atcore.h
 
-#ifeq (win32-x86, $(findstring win32-x86, $(T_A)))
-LIB_INSTALLS_WIN32    += ../atcorem.lib
-BIN_INSTALLS_WIN32    += ../atcore.dll
-LIB_INSTALLS_WIN32    += ../atmcd64m.lib
-BIN_INSTALLS_WIN32    += ../atmcd64d.dll
+ifeq (win32-x86, $(findstring win32-x86, $(T_A)))
+LIB_INSTALLS_WIN32    += ../os/win32-x86/atcorem.lib
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atcore.dll
+LIB_INSTALLS_WIN32    += ../os/win32-x86/atmcd32m.lib
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atmcd32d.dll
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atblkbx.dll
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atdevregcam.dll
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atcl_bitflow.dll
 
-#else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
-LIB_INSTALLS_WIN32    += ../atcorem.lib
-BIN_INSTALLS_WIN32    += ../atcore.dll
-LIB_INSTALLS_WIN32    += ../atmcd64m.lib
-BIN_INSTALLS_WIN32    += ../atmcd64d.dll
+else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
+LIB_INSTALLS_WIN32    += ../os/windows-x64/atcorem.lib
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atcore.dll
+LIB_INSTALLS_WIN32    += ../os/windows-x64/atmcd64m.lib
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atmcd64d.dll
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atblkbx.dll
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atdevregcam.dll
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atcl_bitflow.dll
 
-ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
+else ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
 
