@@ -13,12 +13,16 @@ include $(TOP)/configure/CONFIG
 INC += atcore.h
 
 #ifeq (win32-x86, $(findstring win32-x86, $(T_A)))
-#LIB_INSTALLS_WIN32    += ../ATMCD32M.lib
-#BIN_INSTALLS_WIN32    += ../atmcd32d.dll
+LIB_INSTALLS_WIN32    += ../atcorem.lib
+BIN_INSTALLS_WIN32    += ../atcore.dll
+LIB_INSTALLS_WIN32    += ../atmcd64m.lib
+BIN_INSTALLS_WIN32    += ../atmcd64d.dll
 
 #else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
-#LIB_INSTALLS_WIN32    += ../atmcd64m.lib
-#BIN_INSTALLS_WIN32    += ../atmcd64d.dll
+LIB_INSTALLS_WIN32    += ../atcorem.lib
+BIN_INSTALLS_WIN32    += ../atcore.dll
+LIB_INSTALLS_WIN32    += ../atmcd64m.lib
+BIN_INSTALLS_WIN32    += ../atmcd64d.dll
 
 ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
