@@ -644,7 +644,11 @@ int andor3::freeBuffers()
     if(this->drvBuffers) {
         for(int x = 0; x < this->maxFrames; x++) {
             if(drvBuffers[x]) {
-                free(drvBuffers[x]);
+                #ifdef _WIN32
+                    _aligned_free(drvBuffers[x]);
+                #else
+                    free(drvBuffers[x]);
+                #endif
                 drvBuffers[x] = NULL;
             }
         }
@@ -918,6 +922,8 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     } else {
         this->maxFrames = maxFrames;
     }
+    
+    this->drvBuffers = NULL;
 
     /* set read-only parameters */
     setIntegerParam(NDDataType, NDUInt16);
