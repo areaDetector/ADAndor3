@@ -4,7 +4,7 @@ errlogInit(20000)
 dbLoadDatabase("$(AREA_DETECTOR)/dbd/andor3App.dbd")
 andor3App_registerRecordDeviceDriver(pdbbase) 
 
-epicsEnvSet("PREFIX", "ANDOR1:")
+epicsEnvSet("PREFIX", "13ANDOR3:")
 epicsEnvSet("PORT",   "ANDOR")
 epicsEnvSet("CAMERA", "0")
 epicsEnvSet("QSIZE",  "21")
@@ -39,8 +39,3 @@ iocInit()
 # save things every thirty seconds
 create_monitor_set("auto_settings.req", 30,"P=$(PREFIX),D=cam1:")
 #asynSetTraceMask($(PORT), 0, 255)
-
-dbpf ANDOR1:cam1:TempControl.VAL -30
-dbpf ANDOR1:cam1:SensorCooling.VAL 1
-
-dbpf ANDOR1:cam1:A3ShutterMode.VAL Rolling
