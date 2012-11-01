@@ -70,6 +70,8 @@ protected:
     int Andor3FrameRate;
     #define FIRST_ANDOR3_PARAM Andor3FrameRate
     int Andor3PixelEncoding;
+    int Andor3FullAOIControl;
+    int Andor3Binning;
     int Andor3SensorCooling;
     int Andor3ShutterMode;
     int Andor3SoftwareTrigger;
@@ -91,23 +93,26 @@ private:
     int connectCamera();
     int disconnectCamera();
 
-    AT_H    handle;
-    int     id;
-    int     maxFrames;
-    AT_U8 **drvBuffers;    
-    AT_64   imageSize;
-  epicsEventId start;
+    AT_H    handle_;
+    int     id_;
+    int     maxFrames_;
+    AT_U8 **drvBuffers_;    
+    AT_64   imageSize_;
+    int     exiting_;
+    epicsEventId startEvent_;
 };
 #define NUM_ANDOR3_PARAMS (&LAST_ANDOR3_PARAM - &FIRST_ANDOR3_PARAM + 1)
 
 /* Andor3 driver specific parameters */
-#define Andor3FrameRateString        "FRAME_RATE"        /* asynFloat64  rw */
-#define Andor3PixelEncodingString    "PIXEL_ENCODING"    /* asynInt32    rw */
-#define Andor3SensorCoolingString    "SENSOR_COOLING"    /* asynInt32    rw */
-#define Andor3ShutterModeString      "A3_SHUTTER_MODE"   /* asynInt32    rw */
-#define Andor3SoftwareTriggerString  "SOFTWARE_TRIGGER"  /* asynInt32    wo */
-#define Andor3TempControlString      "TEMP_CONTROL"      /* asynInt32    rw */
-#define Andor3TempStatusString       "TEMP_STATUS"       /* asynInt32    ro */
+#define Andor3FrameRateString        "A3_FRAME_RATE"        /* asynFloat64  rw */
+#define Andor3PixelEncodingString    "A3_PIXEL_ENCODING"    /* asynInt32    rw */
+#define Andor3FullAOIControlString   "A3_FULL_AOI_CONTROL"  /* asynInt32    ro */
+#define Andor3BinningString          "A3_BINNING"           /* asynInt32    rw */
+#define Andor3SensorCoolingString    "A3_SENSOR_COOLING"    /* asynInt32    rw */
+#define Andor3ShutterModeString      "A3_SHUTTER_MODE"      /* asynInt32    rw */
+#define Andor3SoftwareTriggerString  "A3_SOFTWARE_TRIGGER"  /* asynInt32    wo */
+#define Andor3TempControlString      "A3_TEMP_CONTROL"      /* asynInt32    rw */
+#define Andor3TempStatusString       "A3_TEMP_STATUS"       /* asynInt32    ro */
 
 /* Andor3 specific enumerations - sync with mbbi records */
 typedef enum  {
@@ -155,7 +160,8 @@ static int AT_EXP_CONV c_getfeature(AT_H handle, const AT_WC *feature, void *con
 
 void andor3::shutdown(void)
 {
-    if(this->handle) {
+    exiting_ = 1;
+    if(handle_) {
         disconnectCamera();
     }
     AtInitialized--;
@@ -167,144 +173,153 @@ void andor3::shutdown(void)
 void andor3::imageTask()
 {
     epicsTimeStamp imageStamp;
-    int            status;
-    AT_U8         *image;
-    int            size;
-    int            acquire;
+    int status;
+    AT_U8  *image;
+    int size;
+    int acquire;
+    int mode;
+    int total;
+    int number;
+    int count;
+    int callback;
 
-    this->lock();
+    static const char *functionName = "imageTask";
 
-    while(1) {
-        this->unlock();
+    lock();
 
-	getIntegerParam(ADAcquire, &acquire);
-	if(!acquire) {
-	    AT_Flush(this->handle);
+    while(!exiting_) {
 
-	    epicsEventWait(this->start);
-	    
-	    AT_Flush(this->handle);
-	    for(int x=0; x<maxFrames; x++) {
-		if(drvBuffers[x]) {
-		    status = AT_QueueBuffer(this->handle, drvBuffers[x],
-					    imageSize);
-		    if(status) {
-			printf("Queue error: %d\n", status);
-		    }
-		}
-	    }
-	    AT_Command(this->handle, L"AcquisitionStart");
-	}
-        status = AT_WaitBuffer(this->handle, &image, &size, AT_INFINITE);
-        epicsTimeGetCurrent(&imageStamp);
+        getIntegerParam(ADAcquire, &acquire);
+        if(!acquire) {
+            AT_Flush(handle_);
 
-        this->lock();
-
-        if(status != AT_SUCCESS) {
-            printf("error %d\n", status);
-	    continue;
-        } else {
-            int mode;
-            int total;
-	    int number;
-            int count;
-            int callback;
-
-            getIntegerParam(ADNumImagesCounter, &number);
-            number++;
-            setIntegerParam(ADNumImagesCounter, number);
-            callParamCallbacks();
-
-            getIntegerParam(NDArrayCallbacks, &callback);
-            if(callback) {
-                NDArray *pImage;
-                int      dims[2];
-
-                getIntegerParam(NDArraySizeX, &dims[0]);
-                getIntegerParam(NDArraySizeY, &dims[1]);
-
-                pImage = this->pNDArrayPool->alloc(2, dims, NDUInt16, 0, NULL);
-                if(pImage) {
-                    int encoding;
-
-                    getIntegerParam(NDArrayCounter, &count);
-                    count++;
-                    setIntegerParam(NDArrayCounter, count);
-                    callParamCallbacks();
-
-                    pImage->uniqueId = count;
-                    pImage->timeStamp = 631152000 + imageStamp.secPastEpoch +
-                        (imageStamp.nsec / 1.0e9);
-
-                    getIntegerParam(Andor3PixelEncoding, &encoding);
-                    if(encoding == ATMono12 || encoding == ATMono16) {
-			AT_64 stride;
-			int   x_len;
-			AT_U8 *p;
-
-			AT_GetInt(this->handle, L"AOIStride", &stride);
-			x_len = dims[0] * 2;
-			p = (AT_U8 *)pImage->pData;
-
-			for(int x = 0; x < size; x += stride) {
-			    memcpy(p, image+x, x_len);
-			    p += x_len;
-			}
-                    } else if(encoding == ATMono12Packed) {
-                        // Probably broken -- works with Sim cam.
-                        // not tested on real camera -- needs line by line like
-                        // above
-                        AT_U8 *enc = image;
-                        unsigned short *dec = (unsigned short*)pImage->pData;
-
-                        for(int x = 0; x < size; x+=3) {
-                            *dec     = (*enc << 4) + (*(enc+1) & 0xf);
-                            *(dec+1) = (*(enc+2)<<4) + ((*(enc+1) >> 4) & 0xf);
-
-                            enc += 3;
-                            dec += 2;
-                        }
+            unlock();
+            epicsEventWait(startEvent_);
+            lock();
+            
+            AT_Flush(handle_);
+            for(int x=0; x<maxFrames_; x++) {
+                if(drvBuffers_[x]) {
+                    status = AT_QueueBuffer(handle_, drvBuffers_[x],
+                                            imageSize_);
+                    if(status) {
+                        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                            "%s:%s: AT_QueueBuffer error: %d\n", 
+                            driverName, functionName, status);
                     }
-
-                    this->getAttributes(pImage->pAttributeList);
-
-                    this->unlock();
-                    doCallbacksGenericPointer(pImage, NDArrayData, 0);
-                    this->lock();
-
-                    pImage->release();
                 }
             }
-	    getIntegerParam(ADImageMode, &mode);
-	    getIntegerParam(ADNumImages, &total);
-	    if(mode == ATFixed && number == total) {
-		setShutter(0);
-		AT_Command(this->handle, L"AcquisitionStop");
-		setIntegerParam(ADAcquire, 0);
-	    }
-	    callParamCallbacks();
-	}
+            AT_Command(handle_, L"AcquisitionStart");
+        }
+        
+        unlock();
+        status = AT_WaitBuffer(handle_, &image, &size, AT_INFINITE);
+        lock();
+        if(status != AT_SUCCESS) {
+            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                "%s:%s: AT_WaitBuffer, error=%d\n", 
+                driverName, functionName, status);
+            continue;
+        }
+        epicsTimeGetCurrent(&imageStamp);
 
-        status = AT_QueueBuffer(this->handle, image, size);
-	if(status) {
-	    printf("Queue 2: %d\n", status);
-	}
+        getIntegerParam(ADNumImagesCounter, &number);
+        number++;
+        setIntegerParam(ADNumImagesCounter, number);
+        getIntegerParam(NDArrayCounter, &count);
+        count++;
+        setIntegerParam(NDArrayCounter, count);
+        callParamCallbacks();
+
+        getIntegerParam(NDArrayCallbacks, &callback);
+        if(callback) {
+            NDArray *pImage;
+            int      dims[2];
+
+            getIntegerParam(NDArraySizeX, &dims[0]);
+            getIntegerParam(NDArraySizeY, &dims[1]);
+
+            pImage = pNDArrayPool->alloc(2, dims, NDUInt16, 0, NULL);
+            if(pImage) {
+                int encoding;
+
+                pImage->uniqueId = count;
+                pImage->timeStamp = 631152000 + imageStamp.secPastEpoch +
+                    (imageStamp.nsec / 1.0e9);
+
+                getIntegerParam(Andor3PixelEncoding, &encoding);
+                if(encoding == ATMono12 || encoding == ATMono16) {
+                    AT_64 stride;
+                    int   x_len;
+                    AT_U8 *p;
+
+                    AT_GetInt(handle_, L"AOIStride", &stride);
+                    x_len = dims[0] * 2;
+                    p = (AT_U8 *)pImage->pData;
+
+                    for(int x = 0; x < size; x += stride) {
+                        memcpy(p, image+x, x_len);
+                        p += x_len;
+                    }
+                } else if(encoding == ATMono12Packed) {
+                    // Probably broken -- works with Sim cam.
+                    // not tested on real camera -- needs line by line like
+                    // above
+                    AT_U8 *enc = image;
+                    unsigned short *dec = (unsigned short*)pImage->pData;
+
+                    for(int x = 0; x < size; x+=3) {
+                        *dec     = (*enc << 4) + (*(enc+1) & 0xf);
+                        *(dec+1) = (*(enc+2)<<4) + ((*(enc+1) >> 4) & 0xf);
+
+                        enc += 3;
+                        dec += 2;
+                    }
+                }
+
+                getAttributes(pImage->pAttributeList);
+
+                unlock();
+                doCallbacksGenericPointer(pImage, NDArrayData, 0);
+                lock();
+
+                pImage->release();
+            }
+        }
+        getIntegerParam(ADImageMode, &mode);
+        getIntegerParam(ADNumImages, &total);
+        if(mode == ATFixed && number == total) {
+            setShutter(0);
+            AT_Command(handle_, L"AcquisitionStop");
+            setIntegerParam(ADAcquire, 0);
+        }
+        callParamCallbacks();
+
+        status = AT_QueueBuffer(handle_, image, size);
+        if(status) {
+            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                "%s:%s: AT_QueueBuffer 2: error=%d\n", 
+                driverName, functionName, status);
+        }
     }
 }
 
 void andor3::tempTask(void)
 {
     int status;
+    static const char *functionName = "tempTask";
 
-    while(1) {
-	status = getFeature(L"SensorTemperature", ATfloat, ADTemperatureActual);
-	status |= getFeature(L"SensorCooling", ATbool, Andor3SensorCooling);
-	status |= getFeature(L"TemperatureStatus", ATenum, Andor3TempStatus);
+    while(!exiting_) {
+        status = getFeature(L"SensorTemperature", ATfloat, ADTemperatureActual);
+        status |= getFeature(L"SensorCooling", ATbool, Andor3SensorCooling);
+        status |= getFeature(L"TemperatureStatus", ATenum, Andor3TempStatus);
 
-	if(status) {
-	    printf("Temperature read error\n");
-	}
-	epicsThreadSleep(1.0);
+        if(status) {
+            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                "%s:%s: temperature read error = %d\n", 
+                driverName, functionName, status);
+        }
+        epicsThreadSleep(1.0);
     }
 }
 
@@ -328,7 +343,7 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
     /* get feature value to paramIndex */
     switch(type) {
     case ATint:
-        status = AT_GetInt(this->handle, feature, &i_value);
+        status = AT_GetInt(handle_, feature, &i_value);
         if(status == AT_SUCCESS) {
             status = setIntegerParam(paramIndex, (int)i_value);
             if(status) {
@@ -337,7 +352,7 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATfloat:
-        status = AT_GetFloat(this->handle, feature, &d_value);
+        status = AT_GetFloat(handle_, feature, &d_value);
         if(status == AT_SUCCESS) {
             status = setDoubleParam(paramIndex, d_value);
             if(status) {
@@ -346,7 +361,7 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATbool:
-        status = AT_GetBool(this->handle, feature, &b_value);
+        status = AT_GetBool(handle_, feature, &b_value);
         if(status == AT_SUCCESS) {
             status = setIntegerParam(paramIndex, (int)b_value);
             if(status) {
@@ -355,7 +370,7 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATenum:
-        status = AT_GetEnumIndex(this->handle, feature, &index);
+        status = AT_GetEnumIndex(handle_, feature, &index);
         if(status == AT_SUCCESS) {
             status = setIntegerParam(paramIndex, index);
             if(status) {
@@ -364,14 +379,14 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATstring:
-        status = AT_GetStringMaxLength(this->handle, feature, &length);
+        status = AT_GetStringMaxLength(handle_, feature, &length);
         if(status == AT_SUCCESS) {
             length++;
 
             wide = new AT_WC[length];
             str  = new char[length];
 
-            status = AT_GetString(this->handle, feature, wide, length);
+            status = AT_GetString(handle_, feature, wide, length);
             if(status == AT_SUCCESS) {
                 wcstombs(str, wide, length);
                 status = setStringParam(paramIndex, str);
@@ -398,14 +413,14 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
 
     /* error messages */
     if(status == -1) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: unable to set parameter index %d\n",
-                  driverName, functionName, paramIndex);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: unable to set parameter index %d\n",
+            driverName, functionName, paramIndex);
         status = AT_ERR_NOTWRITABLE;
     } else if(status != AT_SUCCESS) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: unable to get feature %s (%d)\n",
-                  driverName, functionName, featureName, status);   
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: unable to get feature %s (%d)\n",
+            driverName, functionName, featureName, status);   
     }
 
     callParamCallbacks();
@@ -436,23 +451,23 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
         if(status) {
             status = -1;
         } else {
-            status  = AT_GetIntMax(this->handle, feature, &i_max);
-            status |= AT_GetIntMin(this->handle, feature, &i_min);
+            status  = AT_GetIntMax(handle_, feature, &i_max);
+            status |= AT_GetIntMin(handle_, feature, &i_min);
             if(status == AT_SUCCESS) {
                 if(i_value < i_min) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-                              "%s:%s setting %s to minimum value %d (was %d)\n",
-                              driverName, functionName, featureName, 
+                        "%s:%s setting %s to minimum value %d (was %d)\n",
+                        driverName, functionName, featureName, 
                               i_min, i_value);
                     i_value = (int)i_min;
                 } else if(i_value > i_max) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-                              "%s:%s setting %s to max value %d (was %d)\n",
-                              driverName, functionName, featureName, 
+                        "%s:%s setting %s to max value %d (was %d)\n",
+                        driverName, functionName, featureName, 
                               i_max, i_value);
                     i_value = (int)i_max;
                 }
-                status = AT_SetInt(this->handle, feature, (AT_64)i_value);
+                status = AT_SetInt(handle_, feature, (AT_64)i_value);
             }
         }
         break;
@@ -461,23 +476,23 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
         if(status) {
             status = -1;
         } else {
-            status  = AT_GetFloatMax(this->handle, feature, &d_max);
-            status |= AT_GetFloatMin(this->handle, feature, &d_min);
+            status  = AT_GetFloatMax(handle_, feature, &d_max);
+            status |= AT_GetFloatMin(handle_, feature, &d_min);
             if(status == AT_SUCCESS) {
                 if(d_value < d_min) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-                              "%s:%s setting %s to minimum value %f (was %f)\n",
-                              driverName, functionName, featureName, 
-                              d_min, d_value);
+                        "%s:%s setting %s to minimum value %f (was %f)\n",
+                          driverName, functionName, featureName, 
+                          d_min, d_value);
                     d_value = d_min;
                 } else if(d_value > d_max) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-                              "%s:%s setting %s to max value %f (was %f)\n",
-                              driverName, functionName, featureName, 
-                              d_max, d_value);
+                        "%s:%s setting %s to max value %f (was %f)\n",
+                        driverName, functionName, featureName, 
+                        d_max, d_value);
                     d_value = d_max;
                 }
-                status = AT_SetFloat(this->handle, feature, d_value);
+                status = AT_SetFloat(handle_, feature, d_value);
             }
         }
         break;
@@ -486,8 +501,8 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
         if(status) {
             status = -1;
         } else {
-            status = AT_SetBool(this->handle, feature, 
-				i_value ? AT_TRUE : AT_FALSE);
+            status = AT_SetBool(handle_, feature, 
+                                i_value ? AT_TRUE : AT_FALSE);
         }
         break;
     case ATenum:
@@ -495,7 +510,7 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
         if(status) {
             status = -1;
         } else {
-            status = AT_SetEnumIndex(this->handle, feature, i_value);
+            status = AT_SetEnumIndex(handle_, feature, i_value);
         }
         break;
     case ATstring:
@@ -505,14 +520,14 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
 
     /* error messages */
     if(status == -1) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: unable to get parameter index %d\n",
-                  driverName, functionName, paramIndex);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: unable to get parameter index %d\n",
+            driverName, functionName, paramIndex);
         status = AT_ERR_NOTWRITABLE;
     } else if(status != AT_SUCCESS) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: unable to set feature %s (%d)\n",
-                  driverName, functionName, featureName, status);   
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: unable to set feature %s (%d)\n",
+            driverName, functionName, featureName, status);   
     }
 
     /* read back current value if set failed */
@@ -537,19 +552,19 @@ int andor3::registerFeature(const AT_WC *feature, Andor3FeatureType type,
         info->type = type;
         info->paramIndex = paramIndex;
 
-        status = AT_RegisterFeatureCallback(this->handle, feature, 
+        status = AT_RegisterFeatureCallback(handle_, feature, 
                                             c_getfeature, info);
     }
 
     if(status == -1) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: unable to allocate memory for featureInfo %s\n",
-                  driverName, functionName, featureName);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: unable to allocate memory for featureInfo %s\n",
+            driverName, functionName, featureName);
         status = AT_ERR_NOTWRITABLE;
     } else if(status != AT_SUCCESS) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: unable to register feature %s (%d)\n",
-                  driverName, functionName, featureName, status);   
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: unable to register feature %s (%d)\n",
+            driverName, functionName, featureName, status);   
     }
     return status;
 }
@@ -558,40 +573,69 @@ int andor3::registerFeature(const AT_WC *feature, Andor3FeatureType type,
            false -> update parameters from camera */
 int andor3::updateAOI(int set)
 {
-    int   status;
-    AT_64 sizeX;
-    AT_64 sizeY;
+    int   status=0;
+    AT_64 at64Value;
+    int minX, sizeX, binX;
+    int minY, sizeY, binY;
     AT_64 sizeI;
+    int binning;
+    int binValues[] = {1, 2, 3, 4, 8};
+    AT_BOOL fullAOIControl;
+    static const char *functionName = "updateAOI";
 
 
     if(set) {
-        status  = getIntegerParam(ADSizeX, (int *)&sizeX);
-        status |= getIntegerParam(ADSizeY, (int *)&sizeY);
+        status |= getIntegerParam(ADSizeX, &sizeX);
+        status |= getIntegerParam(ADSizeY, &sizeY);
+        status |= getIntegerParam(Andor3Binning, &binning);
+        status |= getIntegerParam(ADMinX, &minX);
+        status |= getIntegerParam(ADMinY, &minY);
     } else {
-        status  = AT_GetInt(this->handle, L"AOIWidth", &sizeX);
-        status |= AT_GetInt(this->handle, L"AOIHeight", &sizeY);
+        status |= AT_GetInt(handle_, L"AOIWidth",  &at64Value); sizeX = at64Value;
+        status |= AT_GetInt(handle_, L"AOILeft",   &at64Value); minX  = at64Value;
+        status |= AT_GetInt(handle_, L"AOIHeight", &at64Value); sizeY = at64Value;
+        status |= AT_GetInt(handle_, L"AOITop",    &at64Value); minY  = at64Value;
+        status |= AT_GetBool(handle_, L"FullAOIControl", &fullAOIControl);
+        status |= AT_GetEnumIndex(handle_, L"AOIBinning", &binning);
     }
-    if(!status) {
-        if(set) {
-            status |= setFeature(L"AOIWidth", ATint, ADSizeX);
-            status |= setFeature(L"AOIHeight", ATint, ADSizeY);
-        } else {
-            status |= setIntegerParam(ADSizeX, sizeX);
-            status |= setIntegerParam(ADSizeY, sizeY);
-        }   
-
-        /* set NDArray parameters */
-        status  = setIntegerParam(NDArraySizeX, sizeX);
-        status |= setIntegerParam(NDArraySizeY, sizeY);
-        status |= setIntegerParam(NDArraySize, (sizeX * sizeY * 2));
-    } else {
-        /* print error message */
+    if (status) {
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: error getting values, set=%d, error=%d\n",
+            driverName, functionName, set, status);   
         return status;
     }
+    binX = binValues[binning];
+    setIntegerParam(ADBinX, binX);
+    binY = binValues[binning];
+    setIntegerParam(ADBinY, binY);
+    if(set) {
+        status |= AT_SetEnumIndex(handle_, L"AOIBinning", binning);
+        status |= AT_SetInt(handle_, L"AOIWidth",  sizeX/binX);
+        status |= AT_SetInt(handle_, L"AOILeft",   minX);
+        status |= AT_SetInt(handle_, L"AOIHeight", sizeY/binY);
+        status |= AT_SetInt(handle_, L"AOITop",    minY);
+    } else {
+        status |= setIntegerParam(ADSizeX, sizeX*binX);
+        status |= setIntegerParam(ADMinX,  minX);
+        status |= setIntegerParam(ADSizeY, sizeY*binY);
+        status |= setIntegerParam(ADMinY,  minY);
+        status |= setIntegerParam(Andor3FullAOIControl, fullAOIControl);
+        status |= setIntegerParam(Andor3Binning, binning);
+    }   
 
+    /* set NDArray parameters */
+    status |= setIntegerParam(NDArraySizeX, sizeX/binX);
+    status |= setIntegerParam(NDArraySizeY, sizeY/binY);
+    status |= setIntegerParam(NDArraySize,  sizeX/binX * sizeY/binY * 2);
+    if (status) {
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: error setting values, set=%d, error=%d\n",
+            driverName, functionName, set, status);   
+        return status;
+    }
     /* reallocate image buffers if size changed */
-    status = AT_GetInt(this->handle, L"ImageSizeBytes", &sizeI);
-    if(status == AT_SUCCESS && sizeI != imageSize) {
+    status = AT_GetInt(handle_, L"ImageSizeBytes", &sizeI);
+    if(status == AT_SUCCESS && sizeI != imageSize_) {
         allocateBuffers();
     }
     return status;
@@ -604,34 +648,34 @@ int andor3::allocateBuffers(void)
 
     freeBuffers();
 
-    status = AT_GetInt(this->handle, L"ImageSizeBytes", &size);
+    status = AT_GetInt(handle_, L"ImageSizeBytes", &size);
     if(status != AT_SUCCESS) {
         size = 11059200; /* 16 bit full size */
         status = AT_SUCCESS;
     }
-    this->imageSize = size;
+    imageSize_ = size;
 
-    this->drvBuffers = (AT_U8 **)calloc(this->maxFrames, sizeof(AT_U8 *));
-    if(this->drvBuffers) {
-        for(int x = 0; x < this->maxFrames; x++) {
+    drvBuffers_ = (AT_U8 **)calloc(maxFrames_, sizeof(AT_U8 *));
+    if(drvBuffers_) {
+        for(int x = 0; x < maxFrames_; x++) {
             #ifdef _WIN32
-               drvBuffers[x] = (AT_U8*)_aligned_malloc(size, 8);
+               drvBuffers_[x] = (AT_U8*)_aligned_malloc(size, 8);
             #else
                 /* allocate 8 byte aligned buffer */
-                if(!posix_memalign((void **)&drvBuffers[x], 8, size)) {
-                    //status |= AT_QueueBuffer(this->handle,
+                if(!posix_memalign((void **)&drvBuffers_[x], 8, size)) {
+                    //status |= AT_QueueBuffer(handle_,
                     //                         drvBuffers[x], (int)size);
                 } else {   
-                    drvBuffers[x] = NULL;
+                    drvBuffers_[x] = NULL;
                 }
             #endif
         }
     }
 
     if(status != AT_SUCCESS) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:allocateBuffers: Failed to allocate and queue buffers\n",
-                  driverName);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:allocateBuffers: Failed to allocate and queue buffers\n",
+            driverName);
     }   
     return status;
 }
@@ -640,20 +684,20 @@ int andor3::freeBuffers()
 {
     int status;
 
-    status = AT_Flush(this->handle);
-    if(this->drvBuffers) {
-        for(int x = 0; x < this->maxFrames; x++) {
-            if(drvBuffers[x]) {
+    status = AT_Flush(handle_);
+    if(drvBuffers_) {
+        for(int x = 0; x < maxFrames_; x++) {
+            if(drvBuffers_[x]) {
                 #ifdef _WIN32
-                    _aligned_free(drvBuffers[x]);
+                    _aligned_free(drvBuffers_[x]);
                 #else
-                    free(drvBuffers[x]);
+                    free(drvBuffers_[x]);
                 #endif
-                drvBuffers[x] = NULL;
+                drvBuffers_[x] = NULL;
             }
         }
-        free(drvBuffers);
-        drvBuffers = NULL;
+        free(drvBuffers_);
+        drvBuffers_ = NULL;
     }
     return status;
 }
@@ -669,16 +713,16 @@ int andor3::connectCamera(void)
     /* disconnect any connected camera first */
     disconnectCamera();
 
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
-              "%s:%s: connecting camera %d\n",
-              driverName, functionName, this->id);
+    asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+        "%s:%s: connecting camera %d\n",
+        driverName, functionName, id_);
 
     /* open handle to camera */
-    status = AT_Open(this->id, &this->handle);
+    status = AT_Open(id_, &handle_);
     if(status != AT_SUCCESS) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: unable to open camera %d\n",
-                  driverName, functionName, this->id);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: unable to open camera %d\n",
+            driverName, functionName, id_);
         return status;
     }
 
@@ -694,29 +738,29 @@ int andor3::disconnectCamera(void)
     int acquiring;
 
 
-    if(!this->handle) {
+    if(!handle_) {
         return AT_SUCCESS;
     }
 
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
-              "%s:%s: disconnecting camera %d\n",
-              driverName, functionName, this->id);
+    asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+        "%s:%s: disconnecting camera %d\n",
+        driverName, functionName, id_);
 
-    status = AT_GetBool(this->handle, L"CameraAcquiring", &acquiring);
+    status = AT_GetBool(handle_, L"CameraAcquiring", &acquiring);
     if(status == AT_SUCCESS && acquiring) {
-        status |= AT_Command(this->handle, L"Acquisition Stop");
+        status |= AT_Command(handle_, L"Acquisition Stop");
     }
 
     status |= freeBuffers();
-    status |= AT_Close(this->handle);
+    status |= AT_Close(handle_);
 
     if(status) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
-                  "%s:%s: error closing camera %d\n",
-                  driverName, functionName, this->id);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: error closing camera %d\n",
+            driverName, functionName, id_);
     }
 
-    this->handle = 0;
+    handle_ = 0;
     return status;
 }
 
@@ -742,8 +786,8 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     status = setIntegerParam(index, value);
     if(status) {
         asynPrint(pasynUser, ASYN_TRACE_ERROR,
-                  "%s:%s: failed to write parameter %s = %f\n",
-                  driverName, functionName, paramName, value);
+            "%s:%s: failed to write parameter %s = %f\n",
+            driverName, functionName, paramName, value);
         return (asynStatus)status;
     }
 
@@ -751,10 +795,10 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         if(value) {
             setIntegerParam(ADNumImagesCounter, 0);
             setShutter(1);
-	    epicsEventSignal(this->start);
+            epicsEventSignal(startEvent_);
         } else {
             setShutter(0);
-            status = AT_Command(this->handle, L"AcquisitionStop");
+            status = AT_Command(handle_, L"AcquisitionStop");
         }
     }
     else if(index == ADImageMode) {
@@ -769,6 +813,14 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     else if(index == ADNumImages) {
         status = setFeature(L"FrameCount", ATint, ADNumImages);
     }
+    else if 
+       ((index == Andor3Binning) ||
+        (index == ADMinX)  ||
+        (index == ADSizeX) ||
+        (index == ADMinY)  ||
+        (index == ADSizeY)) {
+        status |= updateAOI(1);
+    }
     else if(index == ADReadStatus) {
         status  = getFeature(L"CameraAcquiring", ATbool, ADStatus);
         status |= updateAOI(0);
@@ -780,7 +832,7 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         }
     }
     else if(index == Andor3SensorCooling) {
-	status = setFeature(L"SensorCooling", ATbool, Andor3SensorCooling);
+        status = setFeature(L"SensorCooling", ATbool, Andor3SensorCooling);
     }
     else if(index == Andor3ShutterMode) {
         status = setFeature(L"ElectronicShutteringMode", ATenum, 
@@ -788,12 +840,12 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     else if(index == Andor3SoftwareTrigger) {
         if(value) {
-            status = AT_Command(this->handle, L"SoftwareTrigger");
+            status = AT_Command(handle_, L"SoftwareTrigger");
             setIntegerParam(Andor3SoftwareTrigger, 0);
         }
     }
     else if(index == Andor3TempControl) {
-	status = setFeature(L"TemperatureControl", ATenum, Andor3TempControl);
+        status = setFeature(L"TemperatureControl", ATenum, Andor3TempControl);
     }
     else {
         if(index < FIRST_ANDOR3_PARAM) {
@@ -806,12 +858,12 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
     if(status) {
         asynPrint(pasynUser, ASYN_TRACE_ERROR,
-                  "%s:%s: error, status=%d param=%s(%d) value=%d\n",
-                  driverName, functionName, status, paramName, index, value);
+            "%s:%s: error, status=%d param=%s(%d) value=%d\n",
+            driverName, functionName, status, paramName, index, value);
     } else {
         asynPrint(pasynUser, ASYN_TRACEIO_DRIVER,
-                  "%s:%s: param=%s(%d) value=%d\n",
-                  driverName, functionName, paramName, index, value);
+            "%s:%s: param=%s(%d) value=%d\n",
+            driverName, functionName, paramName, index, value);
     }
     return (asynStatus)status;
 }
@@ -830,8 +882,8 @@ asynStatus andor3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     status = setDoubleParam(index, value);
     if(status) {
         asynPrint(pasynUser, ASYN_TRACE_ERROR,
-                  "%s:%s: failed to write parameter %s = %f\n",
-                  driverName, functionName, paramName, value);
+            "%s:%s: failed to write parameter %s = %f\n",
+            driverName, functionName, paramName, value);
         return (asynStatus)status;
     }
 
@@ -861,12 +913,12 @@ asynStatus andor3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 
     if(status) {
         asynPrint(pasynUser, ASYN_TRACE_ERROR,
-                  "%s:%s: error, status=%d param=%s(%d) value=%f\n",
-                  driverName, functionName, status, paramName, index, value);
+            "%s:%s: error, status=%d param=%s(%d) value=%f\n",
+            driverName, functionName, status, paramName, index, value);
     } else {
         asynPrint(pasynUser, ASYN_TRACEIO_DRIVER,
-                  "%s:%s: param=%s(%d) value=%f\n",
-                  driverName, functionName, paramName, index, value);
+            "%s:%s: param=%s(%d) value=%f\n",
+            driverName, functionName, paramName, index, value);
     }
     return (asynStatus)status;
 }
@@ -882,7 +934,7 @@ extern "C" int andor3Config(const char *portName, int cameraId, int maxBuffers,
     return(asynSuccess);
 }
 
-/** Constructor for Pilatus driver; most parameters are simply passed to
+/** Constructor for Andor3 driver; most parameters are simply passed to
   * ADDriver::ADDriver.
   *
   * After calling the base class constructor this method creates a thread to
@@ -890,7 +942,7 @@ extern "C" int andor3Config(const char *portName, int cameraId, int maxBuffers,
   * the parameters defined in this class, asynNDArrayDriver, and ADDriver.
   *
   * \param[in] portName The name of the asyn port driver to be created.
-  * \param[in] camerId The id number of the Andor camera (see listdevices
+  * \param[in] cameraId The id number of the Andor camera (see listdevices
   *            example for number).
   * \param[in] maxBuffers The maximum number of NDArray buffers that the
   *            NDArrayPool for this driver is allowed to allocate. Set this to
@@ -911,20 +963,18 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
                ASYN_CANBLOCK,  /* ASYN_CANBLOCK=1 ASYN_MULTIDEVICE=0 */
                1,              /* autoConnect=1 */
                priority, stackSize),
-      handle(0), id(cameraId)
+      handle_(0), id_(cameraId), drvBuffers_(NULL), exiting_(0)
 {
     static const char *functionName = "andor3";
     int status;
 
     /* set max frames */
     if(maxFrames == 0) {
-        this->maxFrames = 2;
+        maxFrames_ = 2;
     } else {
-        this->maxFrames = maxFrames;
+        maxFrames_ = maxFrames;
     }
     
-    this->drvBuffers = NULL;
-
     /* set read-only parameters */
     setIntegerParam(NDDataType, NDUInt16);
     setIntegerParam(NDColorMode, NDColorModeMono);
@@ -937,30 +987,36 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
                 asynParamFloat64, &Andor3FrameRate);
     createParam(Andor3PixelEncodingString,
                 asynParamInt32, &Andor3PixelEncoding);
+    createParam(Andor3FullAOIControlString,
+                asynParamInt32, &Andor3FullAOIControl);
+    createParam(Andor3BinningString,
+                asynParamInt32, &Andor3Binning);
     createParam(Andor3SensorCoolingString,
-		asynParamInt32, &Andor3SensorCooling);
+                asynParamInt32, &Andor3SensorCooling);
     createParam(Andor3ShutterModeString,
                 asynParamInt32, &Andor3ShutterMode);
     createParam(Andor3SoftwareTriggerString,
                 asynParamInt32, &Andor3SoftwareTrigger);
     createParam(Andor3TempControlString,
-		asynParamInt32, &Andor3TempControl);
+                asynParamInt32, &Andor3TempControl);
     createParam(Andor3TempStatusString,
-		asynParamInt32, &Andor3TempStatus);
+                asynParamInt32, &Andor3TempStatus);
 
     /* open camera (also allocates frames) */
     status = AT_InitialiseLibrary();
     if(status != AT_SUCCESS) {
-        printf("%s:%s: Andor Library initialization failed (%d)\n",
-               driverName, functionName, status);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: Andor Library initialization failed (%d)\n",
+            driverName, functionName, status);
         return;
     }
     AtInitialized++;
 
     status = connectCamera();
     if(status != AT_SUCCESS) {
-        printf("%s:%s:  camera connection failed (%d)\n",
-               driverName, functionName, status);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s:  camera connection failed (%d)\n",
+            driverName, functionName, status);
         return;
     }
 
@@ -971,8 +1027,9 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     status |= getFeature(L"SensorHeight", ATint, ADMaxSizeY);
 
     if(status != AT_SUCCESS) {
-        printf("%s:%s: failed to read parameters from camera %d\n",
-               driverName, functionName, this->id);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: failed to read parameters from camera %d\n",
+            driverName, functionName, id_);
         return;
     }
 
@@ -999,44 +1056,47 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     status |= registerFeature(L"ElectronicShutteringMode", ATenum,
                               Andor3ShutterMode);
     status |= registerFeature(L"TemperatureControl", ATenum,
-			      Andor3TempControl);
+                              Andor3TempControl);
     status |= registerFeature(L"TemperatureStatus", ATenum,
-			      Andor3TempStatus);
+                              Andor3TempStatus);
 
     if(status != AT_SUCCESS) {
-        printf("%s:%s: failed to register all features for camera %d\n",
-               driverName, functionName, this->id);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: failed to register all features for camera %d\n",
+            driverName, functionName, id_);
         //return;
     }
 
-    this->start = epicsEventCreate(epicsEventEmpty);
+    startEvent_ = epicsEventCreate(epicsEventEmpty);
 
     /* launch image read task */
     epicsThreadCreate("Andor3ImageTask", 
-		      epicsThreadPriorityMedium,
-		      epicsThreadGetStackSize(epicsThreadStackMedium),
-		      c_imagetask, this);
+                      epicsThreadPriorityMedium,
+                      epicsThreadGetStackSize(epicsThreadStackMedium),
+                      c_imagetask, this);
 
     /* launch temp read task */
     epicsThreadCreate("Andor3TempTask", 
-		      epicsThreadPriorityMedium,
-		      epicsThreadGetStackSize(epicsThreadStackMedium),
-		      c_temptask, this);
+                      epicsThreadPriorityMedium,
+                      epicsThreadGetStackSize(epicsThreadStackMedium),
+                      c_temptask, this);
 
     /* shutdown on exit */
     epicsAtExit(c_shutdown, this);
 
     /* Hard coded values for test weekend */
-    status  = AT_SetBool(this->handle, L"Overlap", AT_TRUE);
-    status |= AT_SetBool(this->handle, L"SpuriousNoiseFilter", AT_TRUE);
+    status  = AT_SetBool(handle_, L"Overlap", AT_TRUE);
+    status |= AT_SetBool(handle_, L"SpuriousNoiseFilter", AT_TRUE);
 
-    status |= AT_SetEnumIndex(this->handle, L"PixelEncoding", 2);
-    status |= AT_SetEnumIndex(this->handle, L"SimplePreAmpGainControl", 2);
+    status |= AT_SetEnumIndex(handle_, L"PixelEncoding", 2);
+    status |= AT_SetEnumIndex(handle_, L"SimplePreAmpGainControl", 2);
  
-    status |= AT_SetEnumIndex(this->handle, L"PixelReadoutRate", 3);
+    status |= AT_SetEnumIndex(handle_, L"PixelReadoutRate", 3);
     
     if(status) {
-	printf("Failed to set hard coded values: %d\n", status);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: failed to set hard coded values: %d\n", 
+            driverName, functionName, status);
     }
 }
 
