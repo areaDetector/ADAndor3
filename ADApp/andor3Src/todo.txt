@@ -1,0 +1,29 @@
+- Use FrameCount to control number of frames, not counter in imageTask
+
+- Implement AccumulateCount
+
+- Implement FanSpeed
+
+- Implement Overlap
+
+- Implement PixelReadoutRate (280 or 100 MHz)
+
+- Implement ReadoutTime
+
+- Implement SensorTemperature
+
+- Implement SimplePreAmpGainControl
+
+- Implement SoftwareTrigger
+
+- Implement SpuriousNoiseFilter
+
+- Implement more status information:
+  SoftwareVersion
+  SerialNumber
+  PixelHeight
+  PixelWidth
+  Move FullAOIControl to constructor
+  FirmwareVersion
+  Controller ID
+  Implements FrameCount
