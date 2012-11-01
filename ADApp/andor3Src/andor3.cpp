@@ -72,11 +72,15 @@ protected:
     int Andor3PixelEncoding;
     int Andor3FullAOIControl;
     int Andor3Binning;
-    int Andor3SensorCooling;
     int Andor3ShutterMode;
     int Andor3SoftwareTrigger;
+    int Andor3SensorCooling;
     int Andor3TempControl;
     int Andor3TempStatus;
+    int Andor3SerialNumber;
+    int Andor3FirmwareVersion;
+    int Andor3SoftwareVersion;
+    int Andor3ControllerID;
     int Andor3Last;
     #define LAST_ANDOR3_PARAM Andor3Last
 private:
@@ -108,11 +112,15 @@ private:
 #define Andor3PixelEncodingString    "A3_PIXEL_ENCODING"    /* asynInt32    rw */
 #define Andor3FullAOIControlString   "A3_FULL_AOI_CONTROL"  /* asynInt32    ro */
 #define Andor3BinningString          "A3_BINNING"           /* asynInt32    rw */
-#define Andor3SensorCoolingString    "A3_SENSOR_COOLING"    /* asynInt32    rw */
 #define Andor3ShutterModeString      "A3_SHUTTER_MODE"      /* asynInt32    rw */
 #define Andor3SoftwareTriggerString  "A3_SOFTWARE_TRIGGER"  /* asynInt32    wo */
+#define Andor3SensorCoolingString    "A3_SENSOR_COOLING"    /* asynInt32    rw */
 #define Andor3TempControlString      "A3_TEMP_CONTROL"      /* asynInt32    rw */
 #define Andor3TempStatusString       "A3_TEMP_STATUS"       /* asynInt32    ro */
+#define Andor3SerialNumberString     "A3_SERIAL_NUMBER"     /* asynOctet    ro */
+#define Andor3FirmwareVersionString  "A3_FIRMWARE_VERSION"  /* asynOctet    ro */
+#define Andor3SoftwareVersionString  "A3_SOFTWARE_VERSION"  /* asynOctet    ro */
+#define Andor3ControllerIDString     "A3_CONTROLLER_ID"     /* asynOctet    ro */
 
 /* Andor3 specific enumerations - sync with mbbi records */
 typedef enum  {
@@ -310,9 +318,9 @@ void andor3::tempTask(void)
     static const char *functionName = "tempTask";
 
     while(!exiting_) {
-        status = getFeature(L"SensorTemperature", ATfloat, ADTemperatureActual);
-        status |= getFeature(L"SensorCooling", ATbool, Andor3SensorCooling);
-        status |= getFeature(L"TemperatureStatus", ATenum, Andor3TempStatus);
+        status  = getFeature(L"SensorTemperature", ATfloat, ADTemperatureActual);
+        status |= getFeature(L"SensorCooling",     ATbool,  Andor3SensorCooling);
+        status |= getFeature(L"TemperatureStatus", ATenum,  Andor3TempStatus);
 
         if(status) {
             asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
@@ -394,6 +402,8 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
                     status = -1;
                 }
             }
+            delete wide;
+            delete str;
         }
     }
 
@@ -595,7 +605,6 @@ int andor3::updateAOI(int set)
         status |= AT_GetInt(handle_, L"AOILeft",   &at64Value); minX  = at64Value;
         status |= AT_GetInt(handle_, L"AOIHeight", &at64Value); sizeY = at64Value;
         status |= AT_GetInt(handle_, L"AOITop",    &at64Value); minY  = at64Value;
-        status |= AT_GetBool(handle_, L"FullAOIControl", &fullAOIControl);
         status |= AT_GetEnumIndex(handle_, L"AOIBinning", &binning);
     }
     if (status) {
@@ -619,7 +628,6 @@ int andor3::updateAOI(int set)
         status |= setIntegerParam(ADMinX,  minX);
         status |= setIntegerParam(ADSizeY, sizeY*binY);
         status |= setIntegerParam(ADMinY,  minY);
-        status |= setIntegerParam(Andor3FullAOIControl, fullAOIControl);
         status |= setIntegerParam(Andor3Binning, binning);
     }   
 
@@ -807,9 +815,9 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     else if(index == ADTriggerMode) {
         status = setFeature(L"TriggerMode", ATenum, ADTriggerMode);
     }
-    /*else if(index == ADNumExposures) {
+    else if(index == ADNumExposures) {
         status = setFeature(L"AccumulateCount", ATint, ADNumExposures);
-    }*/
+    }
     else if(index == ADNumImages) {
         status = setFeature(L"FrameCount", ATint, ADNumImages);
     }
@@ -983,24 +991,19 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     setStringParam(ADStringFromServer, "<not used by driver>");
 
     /* create andor specific parameters */
-    createParam(Andor3FrameRateString, 
-                asynParamFloat64, &Andor3FrameRate);
-    createParam(Andor3PixelEncodingString,
-                asynParamInt32, &Andor3PixelEncoding);
-    createParam(Andor3FullAOIControlString,
-                asynParamInt32, &Andor3FullAOIControl);
-    createParam(Andor3BinningString,
-                asynParamInt32, &Andor3Binning);
-    createParam(Andor3SensorCoolingString,
-                asynParamInt32, &Andor3SensorCooling);
-    createParam(Andor3ShutterModeString,
-                asynParamInt32, &Andor3ShutterMode);
-    createParam(Andor3SoftwareTriggerString,
-                asynParamInt32, &Andor3SoftwareTrigger);
-    createParam(Andor3TempControlString,
-                asynParamInt32, &Andor3TempControl);
-    createParam(Andor3TempStatusString,
-                asynParamInt32, &Andor3TempStatus);
+    createParam(Andor3FrameRateString,        asynParamFloat64, &Andor3FrameRate);
+    createParam(Andor3PixelEncodingString,    asynParamInt32,   &Andor3PixelEncoding);
+    createParam(Andor3FullAOIControlString,   asynParamInt32,   &Andor3FullAOIControl);
+    createParam(Andor3BinningString,          asynParamInt32,   &Andor3Binning);
+    createParam(Andor3ShutterModeString,      asynParamInt32,   &Andor3ShutterMode);
+    createParam(Andor3SoftwareTriggerString,  asynParamInt32,   &Andor3SoftwareTrigger);
+    createParam(Andor3SensorCoolingString,    asynParamInt32,   &Andor3SensorCooling);
+    createParam(Andor3TempControlString,      asynParamInt32,   &Andor3TempControl);
+    createParam(Andor3TempStatusString,       asynParamInt32,   &Andor3TempStatus);
+    createParam(Andor3SerialNumberString,     asynParamOctet,   &Andor3SerialNumber);
+    createParam(Andor3FirmwareVersionString,  asynParamOctet,   &Andor3FirmwareVersion);
+    createParam(Andor3SoftwareVersionString,  asynParamOctet,   &Andor3SoftwareVersion);
+    createParam(Andor3ControllerIDString,     asynParamOctet,   &Andor3ControllerID);
 
     /* open camera (also allocates frames) */
     status = AT_InitialiseLibrary();
@@ -1022,15 +1025,19 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
 
     /* set ReadOnce parameters from feature values */
     status  = setStringParam(ADManufacturer, "Andor");
-    status |= getFeature(L"CameraModel", ATstring, ADModel);
-    status |= getFeature(L"SensorWidth", ATint, ADMaxSizeX);
-    status |= getFeature(L"SensorHeight", ATint, ADMaxSizeY);
+    status |= getFeature(L"CameraModel",     ATstring, ADModel);
+    status |= getFeature(L"SensorWidth",     ATint,    ADMaxSizeX);
+    status |= getFeature(L"SensorHeight",    ATint,    ADMaxSizeY);
+    status |= getFeature(L"SerialNumber",    ATstring, Andor3SerialNumber);
+    status |= getFeature(L"FirmwareVersion", ATstring, Andor3FirmwareVersion);
+    status |= getFeature(L"SoftwareVersion", ATstring, Andor3SoftwareVersion);
+    status |= getFeature(L"ControllerID",    ATstring, Andor3ControllerID);
+    status |= getFeature(L"FullAOIControl",  ATbool,   Andor3FullAOIControl);
 
     if(status != AT_SUCCESS) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
             "%s:%s: failed to read parameters from camera %d\n",
             driverName, functionName, id_);
-        return;
     }
 
     /* register features for change callback (invokes callback to set value)*/
@@ -1046,7 +1053,7 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     
     status |= registerFeature(L"CycleMode", ATenum, ADImageMode);
     status |= registerFeature(L"ExposureTime", ATfloat, ADAcquireTime);
-    //status |= registerFeature(L"AccumulateCount", ATint,  ADNumExposures);
+    status |= registerFeature(L"AccumulateCount", ATint,  ADNumExposures);
     status |= registerFeature(L"FrameCount", ATint, ADNumImages);
     status |= registerFeature(L"CameraAcquiring", ATbool, ADStatus);
 
@@ -1064,7 +1071,6 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
             "%s:%s: failed to register all features for camera %d\n",
             driverName, functionName, id_);
-        //return;
     }
 
     startEvent_ = epicsEventCreate(epicsEventEmpty);
