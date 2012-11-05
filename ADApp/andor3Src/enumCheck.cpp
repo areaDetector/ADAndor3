@@ -3,13 +3,14 @@
 
 #include <atcore.h>
 
+#define MAX_STRING_LEN 64
 
 int main(int argc, char *argv[])
 {
      int   device;
-     AT_WC feature[32];
-     AT_WC indexNameW[32];
-     char  indexName[32];
+     AT_WC feature[MAX_STRING_LEN];
+     AT_WC indexNameW[MAX_STRING_LEN];
+     char  indexName[MAX_STRING_LEN];
      AT_H  handle;
      int   status;
      int   count;
@@ -17,7 +18,7 @@ int main(int argc, char *argv[])
 
 
      device = atoi(argv[1]);
-     mbstowcs(feature, argv[2], 32);
+     mbstowcs(feature, argv[2], MAX_STRING_LEN);
 
      AT_InitialiseLibrary();
      AT_Open(device, &handle);
@@ -27,8 +28,8 @@ int main(int argc, char *argv[])
        return 1;
      }
      for(x = 0; x < count; x++) {
-          AT_GetEnumStringByIndex(handle, feature, x, indexNameW, 32);
-          wcstombs(indexName, indexNameW, 32);
+          AT_GetEnumStringByIndex(handle, feature, x, indexNameW, MAX_STRING_LEN);
+          wcstombs(indexName, indexNameW, MAX_STRING_LEN);
           printf("%d\t%s\n", x, indexName);
      }
 
