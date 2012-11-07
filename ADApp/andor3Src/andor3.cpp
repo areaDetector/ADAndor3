@@ -6,6 +6,9 @@
  * Author: Phillip Sorensen
  *         Cornell University
  *
+ * Co-author: Mark Rivers
+ *            Univerity of Chicago
+ *
  * Created: October 8, 2012
  *
  * NOTES:
@@ -58,7 +61,8 @@ typedef struct {
   Andor3FeatureType type;
   int               paramIndex;
   AT_BOOL           isImplemented;
-  AT_WC             featureName[MAX_FEATURE_NAME_LEN];
+  AT_WC             featureNameWC[MAX_FEATURE_NAME_LEN];
+  char              featureNameMBS[MAX_FEATURE_NAME_LEN];
   bool              exists;
 } featureInfo;
 
@@ -73,14 +77,14 @@ public:
     virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
     virtual asynStatus readEnum(asynUser *pasynUser, char *strings[], int values[], int severities[], 
                                 size_t nElements, size_t *nIn);
+    virtual void report(FILE *fp, int details);
 
     /* "private methods" that need to be called from C */
     void shutdown();
     void imageTask();
     void tempTask();
+    int getFeature(int paramIndex);
 
-    int getFeature(const AT_WC *feature, Andor3FeatureType type,
-                   int paramIndex);
 protected:
     int Andor3FrameRate;
     #define FIRST_ANDOR3_PARAM Andor3FrameRate
@@ -104,17 +108,17 @@ protected:
     int Andor3FanSpeed;
     #define LAST_ANDOR3_PARAM Andor3FanSpeed
 private:
-    int setFeature(const AT_WC *feature, Andor3FeatureType type,
-                   int paramIndex);
     int registerFeature(const AT_WC *feature, Andor3FeatureType type,
                         int paramIndex);
-    int getFeature(const AT_WC *feature, Andor3FeatureType type,
-                   int paramIndex, AT_H handle);
+    int setFeature(int paramIndex);
+    int getFeature(int paramIndex, AT_H handle);
+    int reportFeature(int paramIndex, FILE *fp, int details);
     int updateAOI(int set);
     int allocateBuffers();
     int freeBuffers();
     int connectCamera();
     int disconnectCamera();
+    size_t WCSToMBS(char *mbs, const AT_WC *wcs, size_t mbsLen);
     
     featureInfo *featureInfo_;
     AT_H    handle_;
@@ -182,7 +186,7 @@ static void c_temptask(void *arg)
 static int AT_EXP_CONV c_getfeature(AT_H handle, const AT_WC *feature, void *context)
 {
   featureInfo *info = (featureInfo *)context;
-  return info->camera->getFeature(feature, info->type, info->paramIndex);
+  return info->camera->getFeature(info->paramIndex);
 }
 
 
@@ -335,11 +339,11 @@ void andor3::tempTask(void)
     static const char *functionName = "tempTask";
 
     while(!exiting_) {
-        status  = getFeature(L"SensorTemperature", ATfloat, ADTemperatureActual);
-        status |= getFeature(L"SensorCooling",     ATbool,  Andor3SensorCooling);
-        status |= getFeature(L"TemperatureStatus", ATenum,  Andor3TempStatus);
+        status  = getFeature(ADTemperatureActual);
+        status |= getFeature(Andor3SensorCooling);
+        status |= getFeature(Andor3TempStatus);
 
-        if(status) {
+        if(status && (status != AT_ERR_NOTIMPLEMENTED)) {
             asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
                 "%s:%s: temperature read error = %d\n", 
                 driverName, functionName, status);
@@ -348,19 +352,18 @@ void andor3::tempTask(void)
     }
 }
 
-int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
-                       int paramIndex)
+int andor3::getFeature(int paramIndex)
 {
-    return getFeature(feature, type, paramIndex, handle_);
+    return getFeature(paramIndex, handle_);
 }
 
-int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
-                       int paramIndex, AT_H handle)
+int andor3::getFeature(int paramIndex, AT_H handle)
 {
     static const char* functionName = "getFeature";
 
     int     status = 0;
-    char    featureName[MAX_FEATURE_NAME_LEN];
+    featureInfo *info = &featureInfo_[paramIndex];
+    AT_WC   *featureWC = info->featureNameWC;
     AT_64   i_value;
     double  d_value;
     AT_BOOL b_value;
@@ -369,12 +372,12 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
     AT_WC  *wide;
     char   *str;
 
-    wcstombs(featureName, feature, MAX_FEATURE_NAME_LEN);
-
+    if (!info->isImplemented) return AT_ERR_NOTIMPLEMENTED;
+    
     /* get feature value to paramIndex */
-    switch(type) {
+    switch(info->type) {
     case ATint:
-        status = AT_GetInt(handle, feature, &i_value);
+        status = AT_GetInt(handle, featureWC, &i_value);
         if(status == AT_SUCCESS) {
             status = setIntegerParam(paramIndex, (int)i_value);
             if(status) {
@@ -383,7 +386,7 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATfloat:
-        status = AT_GetFloat(handle, feature, &d_value);
+        status = AT_GetFloat(handle, featureWC, &d_value);
         if(status == AT_SUCCESS) {
             status = setDoubleParam(paramIndex, d_value);
             if(status) {
@@ -392,7 +395,7 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATbool:
-        status = AT_GetBool(handle, feature, &b_value);
+        status = AT_GetBool(handle, featureWC, &b_value);
         if(status == AT_SUCCESS) {
             status = setIntegerParam(paramIndex, (int)b_value);
             if(status) {
@@ -401,7 +404,7 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATenum:
-        status = AT_GetEnumIndex(handle, feature, &index);
+        status = AT_GetEnumIndex(handle, featureWC, &index);
         if(status == AT_SUCCESS) {
             status = setIntegerParam(paramIndex, index);
             if(status) {
@@ -410,16 +413,16 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
         }
         break;
     case ATstring:
-        status = AT_GetStringMaxLength(handle, feature, &length);
+        status = AT_GetStringMaxLength(handle, featureWC, &length);
         if(status == AT_SUCCESS) {
             length++;
 
             wide = new AT_WC[length];
             str  = new char[length];
 
-            status = AT_GetString(handle, feature, wide, length);
+            status = AT_GetString(handle, featureWC, wide, length);
             if(status == AT_SUCCESS) {
-                wcstombs(str, wide, length);
+                WCSToMBS(str, wide, length);
                 status = setStringParam(paramIndex, str);
                 if(status) {
                     status = -1;
@@ -432,14 +435,14 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
 
     /* translate features to ADBase parameters */
     if(status == AT_SUCCESS) {
-        if(!strcmp(featureName, "FrameRate")) {
+        if(!strcmp(info->featureNameMBS, "FrameRate")) {
             paramIndex = ADAcquirePeriod;
             status = setDoubleParam(paramIndex, d_value ? 1.0/d_value : 0);
             if(status) {
                 status = -1;
             }
         }
-        if(!strncmp(featureName, "AOI", 3)) {
+        if(!strncmp(info->featureNameMBS, "AOI", 3)) {
             updateAOI(0);
         }       
     }
@@ -453,19 +456,19 @@ int andor3::getFeature(const AT_WC *feature, Andor3FeatureType type,
     } else if(status != AT_SUCCESS) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
             "%s:%s: unable to get feature %s (%d)\n",
-            driverName, functionName, featureName, status);   
+            driverName, functionName, info->featureNameMBS, status);   
     }
 
     callParamCallbacks();
     return status;
 }
 
-int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
-                       int paramIndex)
+int andor3::setFeature(int paramIndex)
 {
     static const char* functionName = "setFeature";
 
-    char   featureName[MAX_FEATURE_NAME_LEN];
+    featureInfo *info = &featureInfo_[paramIndex];
+    AT_WC  *featureWC = info->featureNameWC;
     int    status=0;
     int    i_value;
     AT_64  i_min;
@@ -475,32 +478,30 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
     double d_max;
 
 
-    wcstombs(featureName, feature, MAX_FEATURE_NAME_LEN);
-
     /* get feature value to paramIndex */
-    switch(type) {
+    switch(info->type) {
     case ATint:
         status = getIntegerParam(paramIndex, &i_value);
         if(status) {
             status = -1;
         } else {
-            status  = AT_GetIntMax(handle_, feature, &i_max);
-            status |= AT_GetIntMin(handle_, feature, &i_min);
+            status  = AT_GetIntMax(handle_, featureWC, &i_max);
+            status |= AT_GetIntMin(handle_, featureWC, &i_min);
             if(status == AT_SUCCESS) {
                 if(i_value < i_min) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
                         "%s:%s setting %s to minimum value %d (was %d)\n",
-                        driverName, functionName, featureName, 
+                        driverName, functionName, info->featureNameMBS, 
                               i_min, i_value);
                     i_value = (int)i_min;
                 } else if(i_value > i_max) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
                         "%s:%s setting %s to max value %d (was %d)\n",
-                        driverName, functionName, featureName, 
+                        driverName, functionName, info->featureNameMBS, 
                               i_max, i_value);
                     i_value = (int)i_max;
                 }
-                status = AT_SetInt(handle_, feature, (AT_64)i_value);
+                status = AT_SetInt(handle_, featureWC, (AT_64)i_value);
             }
         }
         break;
@@ -509,23 +510,23 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
         if(status) {
             status = -1;
         } else {
-            status  = AT_GetFloatMax(handle_, feature, &d_max);
-            status |= AT_GetFloatMin(handle_, feature, &d_min);
+            status  = AT_GetFloatMax(handle_, featureWC, &d_max);
+            status |= AT_GetFloatMin(handle_, featureWC, &d_min);
             if(status == AT_SUCCESS) {
                 if(d_value < d_min) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
                         "%s:%s setting %s to minimum value %f (was %f)\n",
-                          driverName, functionName, featureName, 
+                          driverName, functionName, info->featureNameMBS, 
                           d_min, d_value);
                     d_value = d_min;
                 } else if(d_value > d_max) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
                         "%s:%s setting %s to max value %f (was %f)\n",
-                        driverName, functionName, featureName, 
+                        driverName, functionName, info->featureNameMBS, 
                         d_max, d_value);
                     d_value = d_max;
                 }
-                status = AT_SetFloat(handle_, feature, d_value);
+                status = AT_SetFloat(handle_, featureWC, d_value);
             }
         }
         break;
@@ -534,7 +535,7 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
         if(status) {
             status = -1;
         } else {
-            status = AT_SetBool(handle_, feature, 
+            status = AT_SetBool(handle_, featureWC, 
                                 i_value ? AT_TRUE : AT_FALSE);
         }
         break;
@@ -543,7 +544,7 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
         if(status) {
             status = -1;
         } else {
-            status = AT_SetEnumIndex(handle_, feature, i_value);
+            status = AT_SetEnumIndex(handle_, featureWC, i_value);
         }
         break;
     case ATstring:
@@ -560,12 +561,149 @@ int andor3::setFeature(const AT_WC *feature, Andor3FeatureType type,
     } else if(status != AT_SUCCESS) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
             "%s:%s: unable to set feature %s (%d)\n",
-            driverName, functionName, featureName, status);   
+            driverName, functionName, info->featureNameMBS, status);   
     }
 
     /* read back current value if set failed */
     if(status != AT_SUCCESS) {
-        getFeature(feature, type, paramIndex);
+        getFeature(paramIndex);
+    }
+    return status;
+}
+
+void andor3::report(FILE *fp, int details)
+{
+    char str[MAX_FEATURE_NAME_LEN];
+    
+    getStringParam(Andor3SoftwareVersion, sizeof(str), str);
+    fprintf(fp, "Andor driver, SDK version=%s\n", str);
+    if (details < 1) return;
+
+    reportFeature(ADModel, fp, details);
+    reportFeature(Andor3SerialNumber, fp, details);
+    reportFeature(Andor3FirmwareVersion, fp, details);
+    reportFeature(Andor3ControllerID, fp, details);
+    reportFeature(ADMaxSizeX, fp, details);
+    reportFeature(ADMaxSizeY, fp, details);
+    reportFeature(Andor3FullAOIControl, fp, details);
+    reportFeature(ADSizeX, fp, details);
+    reportFeature(ADSizeY, fp, details);
+    reportFeature(ADMinX, fp, details);
+    reportFeature(ADMinY, fp, details);
+    reportFeature(Andor3Binning, fp, details);
+    reportFeature(Andor3ShutterMode, fp, details);
+    reportFeature(Andor3PixelEncoding, fp, details);
+    reportFeature(Andor3ReadoutRate, fp, details);
+    reportFeature(Andor3FrameRate, fp, details);
+    reportFeature(Andor3Overlap, fp, details);
+    reportFeature(Andor3PreAmpGain, fp, details);
+    reportFeature(Andor3ReadoutTime, fp, details);
+    reportFeature(Andor3NoiseFilter, fp, details);
+    reportFeature(ADImageMode, fp, details);
+    reportFeature(ADAcquireTime, fp, details);
+    reportFeature(ADNumExposures, fp, details);
+    reportFeature(ADNumImages, fp, details);
+    reportFeature(ADStatus, fp, details);
+    reportFeature(Andor3SensorCooling, fp, details);
+    reportFeature(ADTemperature, fp, details);
+    reportFeature(ADTemperatureActual, fp, details);
+    reportFeature(Andor3TempControl, fp, details);
+    reportFeature(Andor3TempStatus, fp, details);
+    reportFeature(Andor3FanSpeed, fp, details);
+    
+    ADDriver::report(fp, details);
+}    
+
+int andor3::reportFeature(int paramIndex, FILE *fp, int details)
+{
+    static const char* functionName = "reportFeature";
+
+    featureInfo *info = &featureInfo_[paramIndex];
+    AT_WC   *featureWC = info->featureNameWC;
+    char    *featureMBS = info->featureNameMBS;
+    int     status=0;
+    const char *paramName;
+    int     enumIndex;
+
+    getParamName(paramIndex, &paramName);
+    
+    if (!info->exists) {
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
+            "%s:%s: parameter %s (%d) not associated with Andor feature\n",
+            driverName, functionName, paramName, paramIndex);
+        return -1;
+    }
+    if (!info->isImplemented) {
+        fprintf(fp, "  %s: not implemented\n", featureMBS);
+        return status;
+    }
+    switch(info->type) {
+    case ATint: {
+        AT_64 i_value, i_min, i_max;
+        status |= AT_GetInt(   handle_, featureWC, &i_value);
+        status |= AT_GetIntMin(handle_, featureWC, &i_min);
+        status |= AT_GetIntMax(handle_, featureWC, &i_max);
+        fprintf(fp, "  %s: type=Integer, range=[%lld : %lld], value=%lld\n", 
+                featureMBS, i_min, i_max, i_value);
+        } break;
+    case ATfloat: {
+        double d_value, d_min, d_max;
+        status |= AT_GetFloat(   handle_, featureWC, &d_value);
+        status |= AT_GetFloatMin(handle_, featureWC, &d_min);
+        status |= AT_GetFloatMax(handle_, featureWC, &d_max);
+        fprintf(fp, "  %s: type=Float, range=[%f : %f], value=%f\n", 
+                featureMBS, d_min, d_max, d_value);
+        } break;
+    case ATbool: {
+        AT_BOOL bool_value;
+        status |= AT_GetBool(   handle_, featureWC, &bool_value);
+        fprintf(fp, "  %s: type=Bool, value=%s\n", 
+                featureMBS, bool_value ? "True" : "False");
+        } break;
+    case ATenum: {
+        int i, enumCount;
+        AT_BOOL isImplemented, isAvailable;
+        AT_WC enumStringWC[MAX_FEATURE_NAME_LEN];
+        char enumString[MAX_FEATURE_NAME_LEN];
+        status |= AT_GetEnumCount(handle_, featureWC, &enumCount);
+        status |= AT_GetEnumIndex(handle_, featureWC, &enumIndex);
+        status |= AT_GetEnumStringByIndex(handle_, featureWC, enumIndex, 
+                                          enumStringWC, MAX_FEATURE_NAME_LEN-1);
+        WCSToMBS(enumString, enumStringWC, sizeof(enumString)-1);  
+        fprintf(fp, "  %s: type=Enum, index=%d, value=%s\n", 
+                featureMBS, enumIndex, enumString);
+        fprintf(fp, "    %d enum choices:\n", enumCount);
+        for (i=0; i<enumCount; i++) {
+            status |= AT_IsEnumIndexImplemented(handle_, featureWC, i, &isImplemented);
+            status |= AT_IsEnumIndexAvailable(handle_, featureWC, i, &isAvailable);
+            status |= AT_GetEnumStringByIndex(handle_, featureWC, i, 
+                                              enumStringWC, MAX_FEATURE_NAME_LEN-1);
+            WCSToMBS(enumString, enumStringWC, sizeof(enumString)-1); 
+            fprintf(fp, "    index=%d, Implemented=%s, Available=%s, string=%s\n",
+                    i, isImplemented ? "True" : "False", 
+                    isAvailable ? "True" : "False", enumString);
+        }
+        } break;
+    case ATstring: {
+        int strLen;
+        status |= AT_GetStringMaxLength(handle_, featureWC, &strLen);
+        strLen++;
+        AT_WC *wcs = new AT_WC[strLen];
+        char *mbs = new char[strLen];
+        status |= AT_GetString(handle_, featureWC, wcs, strLen);
+        WCSToMBS(mbs, wcs, strLen);
+        fprintf(fp, "  %s: type=String, value=%s\n", 
+                featureMBS, mbs);
+        delete wcs;
+        delete mbs;
+        } break;
+    }
+
+    /* error messages */
+    if(status) {
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: error reading values for feature=%s, parameter=%s (index=%d)\n",
+            driverName, functionName, featureMBS, paramName, paramIndex);
     }
     return status;
 }
@@ -577,13 +715,14 @@ int andor3::registerFeature(const AT_WC *feature, Andor3FeatureType type,
     int  status = -1;
     char featureName[MAX_FEATURE_NAME_LEN];
 
-    wcstombs(featureName, feature, MAX_FEATURE_NAME_LEN);
+    WCSToMBS(featureName, feature, MAX_FEATURE_NAME_LEN);
 
     featureInfo *info = &featureInfo_[paramIndex];
     info->camera = this;
     info->type = type;
     info->paramIndex = paramIndex;
-    wcscpy(info->featureName, feature);
+    wcscpy(info->featureNameWC, feature);
+    WCSToMBS(info->featureNameMBS, feature, sizeof(info->featureNameMBS));
     info->exists = true;
     
     status  = AT_IsImplemented(handle_, feature, &info->isImplemented);
@@ -790,16 +929,22 @@ int andor3::disconnectCamera(void)
     return status;
 }
 
+size_t andor3::WCSToMBS(char *mbs, const AT_WC *wcs, size_t mbsLen)
+{
+    mbstate_t mbState = {0};
+    const AT_WC *pWC = wcs;
+    
+    return wcsrtombs(mbs, &pWC, mbsLen, &mbState);
+}  
+
+
 asynStatus andor3::readEnum(asynUser *pasynUser, char *strings[], int values[], int severities[], 
                             size_t nElements, size_t *nIn)
 {
     int index = pasynUser->reason;
     int i;
-    int len;
     int enumCount;
-    mbstate_t mbs = {0};
     AT_WC enumStringWC[MAX_FEATURE_NAME_LEN];
-    const AT_WC *pWC;
     char enumString[MAX_FEATURE_NAME_LEN];
     AT_BOOL isImplemented;
     int status;
@@ -824,15 +969,14 @@ asynStatus andor3::readEnum(asynUser *pasynUser, char *strings[], int values[], 
     }
     if (info->type != ATenum) return asynError;
     
-    status = AT_GetEnumCount(handle_, info->featureName, &enumCount);
+    status = AT_GetEnumCount(handle_, info->featureNameWC, &enumCount);
     for (i=0; ((i<enumCount) && (i<(int)nElements)); i++) {
-        status |= AT_IsEnumIndexImplemented(handle_, info->featureName, i, &isImplemented);
+        status |= AT_IsEnumIndexImplemented(handle_, info->featureNameWC, i, &isImplemented);
         if (!isImplemented) continue;
         if (strings[*nIn]) free(strings[*nIn]);
-        status |= AT_GetEnumStringByIndex(handle_, info->featureName, i, 
+        status |= AT_GetEnumStringByIndex(handle_, info->featureNameWC, i, 
                                           enumStringWC, MAX_FEATURE_NAME_LEN-1);
-        pWC = enumStringWC;
-        len = wcsrtombs(enumString, &pWC, sizeof(enumString)-1, &mbs);  
+        WCSToMBS(enumString, enumStringWC, sizeof(enumString)-1);  
         strings[*nIn] = epicsStrDup(enumString);
         values[*nIn] = i;
         severities[*nIn] = 0;
@@ -885,16 +1029,16 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         }
     }
     else if(index == ADImageMode) {
-        status = setFeature(L"CycleMode", ATenum, ADImageMode);        
+        status = setFeature(ADImageMode);        
     }
     else if(index == ADTriggerMode) {
-        status = setFeature(L"TriggerMode", ATenum, ADTriggerMode);
+        status = setFeature(ADTriggerMode);
     }
     else if(index == ADNumExposures) {
-        status = setFeature(L"AccumulateCount", ATint, ADNumExposures);
+        status = setFeature(ADNumExposures);
     }
     else if(index == ADNumImages) {
-        status = setFeature(L"FrameCount", ATint, ADNumImages);
+        status = setFeature(ADNumImages);
     }
     else if 
        ((index == Andor3Binning) ||
@@ -905,21 +1049,20 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         status |= updateAOI(1);
     }
     else if(index == ADReadStatus) {
-        status  = getFeature(L"CameraAcquiring", ATbool, ADStatus);
+        status  = getFeature(ADStatus);
         status |= updateAOI(0);
     }
     else if(index == Andor3PixelEncoding) {
-        status = setFeature(L"PixelEncoding", ATenum, Andor3PixelEncoding);
+        status = setFeature(Andor3PixelEncoding);
         if(status == AT_SUCCESS) {
             status = allocateBuffers();
         }
     }
     else if(index == Andor3SensorCooling) {
-        status = setFeature(L"SensorCooling", ATbool, Andor3SensorCooling);
+        status = setFeature(Andor3SensorCooling);
     }
     else if(index == Andor3ShutterMode) {
-        status = setFeature(L"ElectronicShutteringMode", ATenum, 
-                            Andor3ShutterMode);
+        status = setFeature(Andor3ShutterMode);
     }
     else if(index == Andor3SoftwareTrigger) {
         if(value) {
@@ -928,22 +1071,22 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         }
     }
     else if(index == Andor3TempControl) {
-        status = setFeature(L"TemperatureControl", ATenum, Andor3TempControl);
+        status = setFeature(Andor3TempControl);
     }
     else if(index == Andor3Overlap) {
-        status = setFeature(L"Overlap", ATbool, Andor3Overlap);
+        status = setFeature(Andor3Overlap);
     }
     else if(index == Andor3FanSpeed) {
-        status = setFeature(L"FanSpeed", ATenum, Andor3FanSpeed);
+        status = setFeature(Andor3FanSpeed);
     }
     else if(index == Andor3ReadoutRate) {
-        status = setFeature(L"PixelReadoutRate", ATenum, Andor3ReadoutRate);
+        status = setFeature(Andor3ReadoutRate);
     }
     else if(index == Andor3PreAmpGain) {
-        status = setFeature(L"SimplePreAmpGainControl", ATenum, Andor3PreAmpGain);
+        status = setFeature(Andor3PreAmpGain);
     }
     else if(index == Andor3NoiseFilter) {
-        status = setFeature(L"SpuriousNoiseFilter", ATbool, Andor3NoiseFilter);
+        status = setFeature(Andor3NoiseFilter);
     }
     else {
         if(index < FIRST_ANDOR3_PARAM) {
@@ -986,19 +1129,19 @@ asynStatus andor3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     }
 
     if(index == ADTemperature) {
-        status = setFeature(L"TargetSensorTemperature", ATfloat, ADTemperature);
+        status = setFeature(ADTemperature);
     }
     else if(index == ADAcquireTime) {
-        status = setFeature(L"ExposureTime", ATfloat, ADAcquireTime);
+        status = setFeature(ADAcquireTime);
     }
     else if(index == ADAcquirePeriod) {
         status = setDoubleParam(Andor3FrameRate, value ? 1.0/value : 0);
         if(!status) {
-            status = setFeature(L"FrameRate", ATfloat, Andor3FrameRate);
+            status = setFeature(Andor3FrameRate);
         }
     }
     else if(index == Andor3FrameRate) {
-        status = setFeature(L"FrameRate", ATfloat, Andor3FrameRate);
+        status = setFeature(Andor3FrameRate);
     }
     else {    
         if(index < FIRST_ANDOR3_PARAM) {
@@ -1131,7 +1274,14 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     status |= registerFeature(L"SensorHeight",             ATint,    ADMaxSizeY);
     status |= registerFeature(L"SerialNumber",             ATstring, Andor3SerialNumber);
     status |= registerFeature(L"FirmwareVersion",          ATstring, Andor3FirmwareVersion);
-    status |= getFeature(     L"SoftwareVersion",          ATstring, Andor3SoftwareVersion, AT_HANDLE_SYSTEM);
+    {
+        AT_WC wcs[MAX_FEATURE_NAME_LEN];
+        char  mbs[MAX_FEATURE_NAME_LEN];
+        status |= AT_GetString(AT_HANDLE_SYSTEM, L"SoftwareVersion", wcs, MAX_FEATURE_NAME_LEN);
+        WCSToMBS(mbs, wcs, sizeof(mbs));
+        setStringParam(Andor3SoftwareVersion, mbs);
+    }
+    status |= getFeature(Andor3SoftwareVersion, AT_HANDLE_SYSTEM);
     status |= registerFeature(L"ControllerID",             ATstring, Andor3ControllerID);
     status |= registerFeature(L"FullAOIControl",           ATbool,   Andor3FullAOIControl);
 
