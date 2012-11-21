@@ -1,2 +1,4 @@
 include "andor3Support.dbd"
+# Use this line when building Windows debug, because GraphicsMagick can't be linked with debug version?
+#include "commonDriverSupportNoMagick.dbd"
 include "commonDriverSupport.dbd"
