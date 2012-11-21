@@ -53,7 +53,8 @@ typedef enum {
     ATfloat,
     ATbool,
     ATenum,
-    ATstring
+    ATstring,
+    ATcommand
 } Andor3FeatureType;
 
 typedef struct {
@@ -103,6 +104,7 @@ protected:
     int Andor3Overlap;
     int Andor3ReadoutRate;
     int Andor3ReadoutTime;
+    int Andor3TransferRate;
     int Andor3PreAmpGain;
     int Andor3NoiseFilter;
     int Andor3FanSpeed;
@@ -112,6 +114,7 @@ private:
                         int paramIndex);
     int setFeature(int paramIndex);
     int getFeature(int paramIndex, AT_H handle);
+    int getEnumString(int paramIndex, char *str, int len);
     int reportFeature(int paramIndex, FILE *fp, int details);
     int updateAOI(int set);
     int allocateBuffers();
@@ -148,22 +151,10 @@ private:
 #define Andor3OverlapString          "A3_OVERLAP"           /* asynInt32    rw */
 #define Andor3ReadoutRateString      "A3_READOUT_RATE"      /* asynInt32    rw */
 #define Andor3ReadoutTimeString      "A3_READOUT_TIME"      /* asynFloat64  rw */
+#define Andor3TransferRateString     "A3_TRANSFER_RATE"     /* asynFloat64  rw */
 #define Andor3PreAmpGainString       "A3_PREAMP_GAIN"       /* asynInt32    rw */
 #define Andor3NoiseFilterString      "A3_NOISE_FILTER"      /* asynInt32    rw */
 #define Andor3FanSpeedString         "A3_FAN_SPEED"         /* asynInt32    rw */
-
-/* Andor3 specific enumerations - sync with mbbi records */
-typedef enum  {
-    ATFixed = 0,
-    ATContinuous = 1
-} ATCycleMode_t;  /* "CycleMode"  $(P)$(R)ImageMode */
-
-typedef enum {
-    ATMono12 = 0,
-    ATMono12Packed = 1,
-    ATMono16 = 2
-} ATPixelEncoding_t;  /* "PixelEncoding"  $(P)$(R)PixelEncoding */
-
 
 static void c_shutdown(void *arg)
 {
@@ -208,8 +199,8 @@ void andor3::imageTask()
     int status;
     AT_U8  *image;
     int size;
+    char modeString[MAX_FEATURE_NAME_LEN];
     int acquire;
-    int mode;
     int total;
     int number;
     int count;
@@ -267,23 +258,32 @@ void andor3::imageTask()
         if(callback) {
             NDArray *pImage;
             int      dims[2];
+            char encodingString[MAX_FEATURE_NAME_LEN];
+            AT_64 stride;
+            int pixelSize;
 
             getIntegerParam(NDArraySizeX, &dims[0]);
             getIntegerParam(NDArraySizeY, &dims[1]);
 
-            pImage = pNDArrayPool->alloc(2, dims, NDUInt16, 0, NULL);
+            getEnumString(Andor3PixelEncoding, encodingString, sizeof(encodingString));
+            if (strcmp(encodingString, "Mono32")==0) {
+                pImage = pNDArrayPool->alloc(2, dims, NDUInt32, 0, NULL);
+                pixelSize = 4;
+                setIntegerParam(NDDataType, NDUInt32);
+            } else {
+                pImage = pNDArrayPool->alloc(2, dims, NDUInt16, 0, NULL);
+                pixelSize = 2;
+                setIntegerParam(NDDataType, NDUInt16);
+            }
             if(pImage) {
-                int encoding;
-                AT_64 stride;
-                int pixelSize = 2;
-
                 pImage->uniqueId = count;
                 pImage->timeStamp = 631152000 + imageStamp.secPastEpoch +
                     (imageStamp.nsec / 1.0e9);
 
-                getIntegerParam(Andor3PixelEncoding, &encoding);
                 AT_GetInt(handle_, L"AOIStride", &stride);
-                if(encoding == ATMono12 || encoding == ATMono16) {
+                if ((strcmp(encodingString, "Mono12")==0) || 
+                    (strcmp(encodingString, "Mono16")==0) ||
+                    (strcmp(encodingString, "Mono32")==0)) {
                     AT_U8 *p;
 
                     p = (AT_U8 *)pImage->pData;
@@ -291,7 +291,7 @@ void andor3::imageTask()
                         memcpy(p, image+x, dims[0]*pixelSize);
                         p += dims[0]*pixelSize;
                     }
-                } else if(encoding == ATMono12Packed) {
+                } else if (strcmp(encodingString, "Mono12Packed")==0) {
                     AT_U8 *enc = image;
                     unsigned short *dec = (unsigned short*)pImage->pData;
 
@@ -315,9 +315,9 @@ void andor3::imageTask()
                 pImage->release();
             }
         }
-        getIntegerParam(ADImageMode, &mode);
+        getEnumString(ADImageMode, modeString, sizeof(modeString));
         getIntegerParam(ADNumImages, &total);
-        if(mode == ATFixed && number == total) {
+        if((strcmp(modeString, "Fixed")==0) && number == total) {
             setShutter(0);
             AT_Command(handle_, L"AcquisitionStop");
             setIntegerParam(ADAcquire, 0);
@@ -371,6 +371,10 @@ int andor3::getFeature(int paramIndex, AT_H handle)
     int     length;
     AT_WC  *wide;
     char   *str;
+    
+    asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+        "%s:%s: entry, feature=%s\n",
+        driverName, functionName, info->featureNameMBS);
 
     if (!info->isImplemented) return AT_ERR_NOTIMPLEMENTED;
     
@@ -424,13 +428,14 @@ int andor3::getFeature(int paramIndex, AT_H handle)
             if(status == AT_SUCCESS) {
                 WCSToMBS(str, wide, length);
                 status = setStringParam(paramIndex, str);
-                if(status) {
-                    status = -1;
-                }
             }
             delete wide;
             delete str;
         }
+        break;
+    case ATcommand:
+        // Nothing to do
+        break;
     }
 
     /* translate features to ADBase parameters */
@@ -463,6 +468,20 @@ int andor3::getFeature(int paramIndex, AT_H handle)
     return status;
 }
 
+int andor3::getEnumString(int paramIndex, char *str, int len)
+{
+    AT_WC *featureWC = featureInfo_[paramIndex].featureNameWC;
+    int status = 0;
+    int enumIndex;
+    AT_WC enumStringWC[MAX_FEATURE_NAME_LEN];
+
+    status |= AT_GetEnumIndex(handle_, featureWC, &enumIndex);
+    status |= AT_GetEnumStringByIndex(handle_, featureWC, enumIndex, 
+                                      enumStringWC, MAX_FEATURE_NAME_LEN-1);
+    WCSToMBS(str, enumStringWC, len);
+    return status;
+} 
+
 int andor3::setFeature(int paramIndex)
 {
     static const char* functionName = "setFeature";
@@ -477,6 +496,9 @@ int andor3::setFeature(int paramIndex)
     double d_min;
     double d_max;
 
+    asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+        "%s:%s: entry, feature=%s\n",
+        driverName, functionName, info->featureNameMBS);
 
     /* get feature value to paramIndex */
     switch(info->type) {
@@ -550,6 +572,9 @@ int andor3::setFeature(int paramIndex)
     case ATstring:
         status = 2;
         break;
+    case ATcommand:
+        status = AT_Command(handle_, featureWC);
+        break;
     }
 
     /* error messages */
@@ -598,12 +623,15 @@ void andor3::report(FILE *fp, int details)
     reportFeature(Andor3Overlap, fp, details);
     reportFeature(Andor3PreAmpGain, fp, details);
     reportFeature(Andor3ReadoutTime, fp, details);
+    reportFeature(Andor3TransferRate, fp, details);
     reportFeature(Andor3NoiseFilter, fp, details);
     reportFeature(ADImageMode, fp, details);
     reportFeature(ADAcquireTime, fp, details);
     reportFeature(ADNumExposures, fp, details);
     reportFeature(ADNumImages, fp, details);
     reportFeature(ADStatus, fp, details);
+    reportFeature(ADTriggerMode, fp, details);
+    reportFeature(Andor3SoftwareTrigger, fp, details);
     reportFeature(Andor3SensorCooling, fp, details);
     reportFeature(ADTemperature, fp, details);
     reportFeature(ADTemperatureActual, fp, details);
@@ -697,6 +725,10 @@ int andor3::reportFeature(int paramIndex, FILE *fp, int details)
         delete wcs;
         delete mbs;
         } break;
+    case ATcommand: {
+        fprintf(fp, "  %s: type=Command, implemented\n", 
+                featureMBS);
+        } break;
     }
 
     /* error messages */
@@ -750,19 +782,27 @@ int andor3::updateAOI(int set)
     int binValues[] = {1, 2, 3, 4, 8};
     static const char *functionName = "updateAOI";
 
+    asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+        "%s:%s: entry, set=%d\n",
+        driverName, functionName, set);
 
-    if(set) {
+    if (set) {
         status |= getIntegerParam(ADSizeX, &sizeX);
         status |= getIntegerParam(ADSizeY, &sizeY);
         status |= getIntegerParam(Andor3Binning, &binning);
         status |= getIntegerParam(ADMinX, &minX);
         status |= getIntegerParam(ADMinY, &minY);
     } else {
+//printf("calling AT_GetInt for AOIWidth\n");   
         status |= AT_GetInt(handle_, L"AOIWidth",  &at64Value); sizeX = at64Value;
+//printf("AOIWidth, status=%d, sizeX=%d\n", status, sizeX);   
         status |= AT_GetInt(handle_, L"AOILeft",   &at64Value); minX  = at64Value;
         status |= AT_GetInt(handle_, L"AOIHeight", &at64Value); sizeY = at64Value;
         status |= AT_GetInt(handle_, L"AOITop",    &at64Value); minY  = at64Value;
         status |= AT_GetEnumIndex(handle_, L"AOIBinning", &binning);
+        asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+            "%s:%s: minX=%d, sizeX=%d, minY=%d, sizeY=%d, binning=%d\n",
+            driverName, functionName, minX, sizeX, minY, sizeY, binning);
     }
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
@@ -774,8 +814,15 @@ int andor3::updateAOI(int set)
     setIntegerParam(ADBinX, binX);
     binY = binValues[binning];
     setIntegerParam(ADBinY, binY);
-    if(set) {
-        status |= AT_SetEnumIndex(handle_, L"AOIBinning", binning);
+    asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+        "%s:%s: entry, setting values\n",
+        driverName, functionName, set);
+    if (set) {
+//printf("%s::%s calling AT_SetEnumIndex for AOIBinning, binning=%d\n",
+//driverName, functionName, binning);
+        status = AT_SetEnumIndex(handle_, L"AOIBinning", binning);
+//printf("%s::%s AT_SetEnumIndex for AOIBinning returned status=%d\n",
+//driverName, functionName, status);
         status |= AT_SetInt(handle_, L"AOIWidth",  sizeX/binX);
         status |= AT_SetInt(handle_, L"AOILeft",   minX);
         status |= AT_SetInt(handle_, L"AOIHeight", sizeY/binY);
@@ -801,6 +848,9 @@ int andor3::updateAOI(int set)
     /* reallocate image buffers if size changed */
     status = AT_GetInt(handle_, L"ImageSizeBytes", &sizeI);
     if(status == AT_SUCCESS && sizeI != imageSize_) {
+        asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+            "%s:%s: entry, allocating buffers\n",
+            driverName, functionName, set);
         allocateBuffers();
     }
     return status;
@@ -1035,10 +1085,21 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         status = setFeature(ADTriggerMode);
     }
     else if(index == ADNumExposures) {
-        status = setFeature(ADNumExposures);
+        // The SDK requires FrameCount to be desired number of frames times AccumulateCount
+        int numImages;
+        status  = getIntegerParam(ADNumImages, &numImages);
+        status |= setIntegerParam(ADNumImages, value * numImages);
+        status |= setFeature(ADNumImages);
+        status |= setIntegerParam(ADNumImages, numImages);
+        status |= setFeature(ADNumExposures);
     }
     else if(index == ADNumImages) {
-        status = setFeature(ADNumImages);
+        // The SDK requires FrameCount to be desired number of frames times AccumulateCount
+        int numExposures;
+        status = getIntegerParam(ADNumExposures, &numExposures);
+        status |= setIntegerParam(ADNumImages, value * numExposures);
+        status |= setFeature(ADNumImages);
+        status |= setIntegerParam(ADNumImages, value);
     }
     else if 
        ((index == Andor3Binning) ||
@@ -1046,7 +1107,7 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         (index == ADSizeX) ||
         (index == ADMinY)  ||
         (index == ADSizeY)) {
-        status |= updateAOI(1);
+        status = updateAOI(1);
     }
     else if(index == ADReadStatus) {
         status  = getFeature(ADStatus);
@@ -1233,6 +1294,7 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     createParam(Andor3OverlapString,          asynParamInt32,   &Andor3Overlap);
     createParam(Andor3ReadoutRateString,      asynParamInt32,   &Andor3ReadoutRate);
     createParam(Andor3ReadoutTimeString,      asynParamFloat64, &Andor3ReadoutTime);
+    createParam(Andor3TransferRateString,     asynParamFloat64, &Andor3TransferRate);
     createParam(Andor3PreAmpGainString,       asynParamInt32,   &Andor3PreAmpGain);
     createParam(Andor3NoiseFilterString,      asynParamInt32,   &Andor3NoiseFilter);
     createParam(Andor3FanSpeedString,         asynParamInt32,   &Andor3FanSpeed);
@@ -1304,12 +1366,16 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     status |= registerFeature(L"FrameCount",               ATint,    ADNumImages);
     status |= registerFeature(L"CameraAcquiring",          ATbool,   ADStatus);
 
+    status |= registerFeature(L"TriggerMode",              ATenum,   ADTriggerMode);
+    status |= registerFeature(L"SoftwareTrigger",          ATcommand,Andor3SoftwareTrigger);
+
     status |= registerFeature(L"FrameRate",                ATfloat,  Andor3FrameRate);
     status |= registerFeature(L"PixelEncoding",            ATenum,   Andor3PixelEncoding);
     status |= registerFeature(L"ElectronicShutteringMode", ATenum,   Andor3ShutterMode);
     status |= registerFeature(L"Overlap",                  ATbool,   Andor3Overlap);
     status |= registerFeature(L"PixelReadoutRate",         ATenum,   Andor3ReadoutRate);
     status |= registerFeature(L"ReadoutTime",              ATfloat,  Andor3ReadoutTime);
+    status |= registerFeature(L"MaxInterfaceTransferRate", ATfloat,  Andor3TransferRate);
     status |= registerFeature(L"SimplePreAmpGainControl",  ATenum,   Andor3PreAmpGain);
     status |= registerFeature(L"SpuriousNoiseFilter",      ATbool,   Andor3NoiseFilter);
 
