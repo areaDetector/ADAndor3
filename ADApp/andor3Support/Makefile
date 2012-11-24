@@ -31,12 +31,50 @@ BIN_INSTALLS_WIN32    += ../os/windows-x64/atdevregcam.dll
 BIN_INSTALLS_WIN32    += ../os/windows-x64/atcl_bitflow.dll
 
 else ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatblkbx.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatblkbx.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatblkbx.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcl_bitflow.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcl_bitflow.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcl_bitflow.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevsimcam.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevsimcam.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevsimcam.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatmcd.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatmcd.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatmcd.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatusb_libusb.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatusb_libusb.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatusb_libusb.so
 
 else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatblkbx.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatblkbx.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86/libatblkbx.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcl_bitflow.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcl_bitflow.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcl_bitflow.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevsimcam.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevsimcam.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevsimcam.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatmcd.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatmcd.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86/libatmcd.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatusb_libusb.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatusb_libusb.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86/libatusb_libusb.so
 
 endif
 
