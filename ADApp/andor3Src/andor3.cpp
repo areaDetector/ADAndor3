@@ -116,7 +116,8 @@ private:
     int getFeature(int paramIndex, AT_H handle);
     int getEnumString(int paramIndex, char *str, int len);
     int reportFeature(int paramIndex, FILE *fp, int details);
-    int updateAOI(int set);
+    int getAOI();
+    int setAOI();
     int allocateBuffers();
     int freeBuffers();
     int connectCamera();
@@ -448,7 +449,7 @@ int andor3::getFeature(int paramIndex, AT_H handle)
             }
         }
         if(!strncmp(info->featureNameMBS, "AOI", 3)) {
-            updateAOI(0);
+            getAOI();
         }       
     }
 
@@ -769,71 +770,78 @@ int andor3::registerFeature(const AT_WC *feature, Andor3FeatureType type,
     return status;
 }
 
-/* if set  true  -> update camera from parameters 
-           false -> update parameters from camera */
-int andor3::updateAOI(int set)
+int andor3::setAOI()
 {
-    int   status=0;
+    int status=0;
+    int minX, sizeX, binX;
+    int minY, sizeY, binY;
+    int binning;
+    int binValues[] = {1, 2, 3, 4, 8};
+    static const char *functionName = "setAOI";
+
+    asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+        "%s:%s: entry\n",
+        driverName, functionName);
+
+    status |= getIntegerParam(ADSizeX, &sizeX);
+    status |= getIntegerParam(ADSizeY, &sizeY);
+    status |= getIntegerParam(Andor3Binning, &binning);
+    status |= getIntegerParam(ADMinX, &minX);
+    status |= getIntegerParam(ADMinY, &minY);
+    if (status) {
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+            "%s:%s: error getting values, error=%d\n",
+            driverName, functionName, status);   
+        return status;
+    }
+    binX = binValues[binning];
+    binY = binValues[binning];
+    status = AT_SetEnumIndex(handle_, L"AOIBinning", binning);
+    status |= AT_SetInt(handle_, L"AOIWidth",  sizeX/binX);
+    status |= AT_SetInt(handle_, L"AOILeft",   minX);
+    status |= AT_SetInt(handle_, L"AOIHeight", sizeY/binY);
+    status |= AT_SetInt(handle_, L"AOITop",    minY);
+    return status;
+}
+
+int andor3::getAOI()
+{
+    int status=0;
     AT_64 at64Value;
     int minX, sizeX, binX;
     int minY, sizeY, binY;
     AT_64 sizeI;
     int binning;
     int binValues[] = {1, 2, 3, 4, 8};
-    static const char *functionName = "updateAOI";
+    static const char *functionName = "getAOI";
 
     asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
-        "%s:%s: entry, set=%d\n",
-        driverName, functionName, set);
+        "%s:%s: entry\n",
+        driverName, functionName);
 
-    if (set) {
-        status |= getIntegerParam(ADSizeX, &sizeX);
-        status |= getIntegerParam(ADSizeY, &sizeY);
-        status |= getIntegerParam(Andor3Binning, &binning);
-        status |= getIntegerParam(ADMinX, &minX);
-        status |= getIntegerParam(ADMinY, &minY);
-    } else {
-//printf("calling AT_GetInt for AOIWidth\n");   
-        status |= AT_GetInt(handle_, L"AOIWidth",  &at64Value); sizeX = at64Value;
-//printf("AOIWidth, status=%d, sizeX=%d\n", status, sizeX);   
-        status |= AT_GetInt(handle_, L"AOILeft",   &at64Value); minX  = at64Value;
-        status |= AT_GetInt(handle_, L"AOIHeight", &at64Value); sizeY = at64Value;
-        status |= AT_GetInt(handle_, L"AOITop",    &at64Value); minY  = at64Value;
-        status |= AT_GetEnumIndex(handle_, L"AOIBinning", &binning);
-        asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
-            "%s:%s: minX=%d, sizeX=%d, minY=%d, sizeY=%d, binning=%d\n",
-            driverName, functionName, minX, sizeX, minY, sizeY, binning);
-    }
+    status |= AT_GetInt(handle_, L"AOIWidth",  &at64Value); sizeX = at64Value;
+    status |= AT_GetInt(handle_, L"AOILeft",   &at64Value); minX  = at64Value;
+    status |= AT_GetInt(handle_, L"AOIHeight", &at64Value); sizeY = at64Value;
+    status |= AT_GetInt(handle_, L"AOITop",    &at64Value); minY  = at64Value;
+    status |= AT_GetEnumIndex(handle_, L"AOIBinning", &binning);
+    asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+        "%s:%s: minX=%d, sizeX=%d, minY=%d, sizeY=%d, binning=%d\n",
+        driverName, functionName, minX, sizeX, minY, sizeY, binning);
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-            "%s:%s: error getting values, set=%d, error=%d\n",
-            driverName, functionName, set, status);   
+            "%s:%s: error getting values, error=%d\n",
+            driverName, functionName, status);   
         return status;
     }
     binX = binValues[binning];
     setIntegerParam(ADBinX, binX);
     binY = binValues[binning];
     setIntegerParam(ADBinY, binY);
-    asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
-        "%s:%s: entry, setting values\n",
-        driverName, functionName, set);
-    if (set) {
-//printf("%s::%s calling AT_SetEnumIndex for AOIBinning, binning=%d\n",
-//driverName, functionName, binning);
-        status = AT_SetEnumIndex(handle_, L"AOIBinning", binning);
-//printf("%s::%s AT_SetEnumIndex for AOIBinning returned status=%d\n",
-//driverName, functionName, status);
-        status |= AT_SetInt(handle_, L"AOIWidth",  sizeX/binX);
-        status |= AT_SetInt(handle_, L"AOILeft",   minX);
-        status |= AT_SetInt(handle_, L"AOIHeight", sizeY/binY);
-        status |= AT_SetInt(handle_, L"AOITop",    minY);
-    } else {
-        status |= setIntegerParam(ADSizeX, sizeX*binX);
-        status |= setIntegerParam(ADMinX,  minX);
-        status |= setIntegerParam(ADSizeY, sizeY*binY);
-        status |= setIntegerParam(ADMinY,  minY);
-        status |= setIntegerParam(Andor3Binning, binning);
-    }   
+    status |= setIntegerParam(ADSizeX, sizeX*binX);
+    status |= setIntegerParam(ADMinX,  minX);
+    status |= setIntegerParam(ADSizeY, sizeY*binY);
+    status |= setIntegerParam(ADMinY,  minY);
+    status |= setIntegerParam(Andor3Binning, binning);
 
     /* set NDArray parameters */
     status |= setIntegerParam(NDArraySizeX, sizeX/binX);
@@ -841,16 +849,16 @@ int andor3::updateAOI(int set)
     status |= setIntegerParam(NDArraySize,  sizeX/binX * sizeY/binY * 2);
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-            "%s:%s: error setting values, set=%d, error=%d\n",
-            driverName, functionName, set, status);   
+            "%s:%s: error setting values, error=%d\n",
+            driverName, functionName, status);   
         return status;
     }
     /* reallocate image buffers if size changed */
     status = AT_GetInt(handle_, L"ImageSizeBytes", &sizeI);
     if(status == AT_SUCCESS && sizeI != imageSize_) {
         asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
-            "%s:%s: entry, allocating buffers\n",
-            driverName, functionName, set);
+            "%s:%s: allocating buffers\n",
+            driverName, functionName);
         allocateBuffers();
     }
     return status;
@@ -1107,11 +1115,11 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         (index == ADSizeX) ||
         (index == ADMinY)  ||
         (index == ADSizeY)) {
-        status = updateAOI(1);
+        status = setAOI();
     }
     else if(index == ADReadStatus) {
         status  = getFeature(ADStatus);
-        status |= updateAOI(0);
+        status |= getAOI();
     }
     else if(index == Andor3PixelEncoding) {
         status = setFeature(Andor3PixelEncoding);
