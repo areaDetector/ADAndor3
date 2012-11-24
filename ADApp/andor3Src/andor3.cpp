@@ -1280,7 +1280,7 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
 
     /* set max frames */
     if(maxFrames == 0) {
-        maxFrames_ = 2;
+        maxFrames_ = 10;
     } else {
         maxFrames_ = maxFrames;
     }
