@@ -9,9 +9,9 @@ LIBRARY_IOC_WIN32 += andor3
 LIB_SRCS += andor3.cpp
 
 PROD_IOC_Linux += andor3App
-PROD_IOC_Linux += serialNumber
+PROD_IOC_Linux += binTest
 PROD_IOC_WIN32 += andor3App
-PROD_IOC_WIN32 += serialNumber
+PROD_IOC_WIN32 += binTest
 
 # <name>.dbd will be created from <name>Include.dbd
 DBD += andor3App.dbd
@@ -19,7 +19,7 @@ DBD += andor3Support.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 andor3App_SRCS += andor3App_registerRecordDeviceDriver.cpp andor3AppMain.cpp
-serialNumberSrcs += serialNumber.cpp
+binTestSrcs += binTest.cpp
 
 # Add locally compiled object code
 PROD_LIBS += andor3
@@ -41,7 +41,13 @@ PROD_LIBS_Linux += atcore
 STATIC_BUILD=NO
 endif
 
+ifeq (windows-x64-debug, $(findstring windows-x64-debug, $(T_A)))
+USR_LDFLAGS_WIN32 += /NODEFAULTLIB:LIBCMT.lib
+endif
 
+
+# Use this line when building on Windows with debugging
+#include $(TOP)/ADApp/commonDriverMakefileNoMagick
 include $(TOP)/ADApp/commonDriverMakefile
 
 #=============================
