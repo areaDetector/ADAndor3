@@ -1,9 +1,6 @@
 - 3x3 binning does not work - hangs Windows
 
-- Documentation
-
-- Finish new SDK in andor3Support.  Test on win32-x86, windows-x64, linux-x86,
-linux-x86_64.
+- Test on win32-x86, windows-x64, linux-x86, linux-x86_64.
 
 
 
