@@ -15,7 +15,7 @@ epicsEnvSet("NCHANS", "2048")
 # andor3Config(const char *portName, int cameraId, int maxBuffers,
 #              size_t maxMemory, int priority, int stackSize,
 #              int maxFrames)
-andor3Config("$(PORT)", $(CAMERA), 0, 0, 0, 100000, 10)
+andor3Config("$(PORT)", $(CAMERA), 0, 0, 0, 100000, 100)
 dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/ADBase.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 #dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDFile.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/andor3.template",   "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
@@ -32,7 +32,7 @@ dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDStdArrays.template", "P=$(PREFIX),R=i
 # Load all other plugins using commonPlugins.cmd
 < ../commonPlugins.cmd
 
-#asynSetTraceMask("$(PORT)",0,255)
+#asynSetTraceMask("$(PORT)",0,9)
 asynSetTraceIOMask("$(PORT)",0,4)
 
 iocInit()
