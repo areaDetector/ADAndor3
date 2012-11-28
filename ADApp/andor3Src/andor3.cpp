@@ -133,7 +133,7 @@ private:
     int     exiting_;
     epicsEventId startEvent_;
 };
-#define NUM_ANDOR3_PARAMS (&LAST_ANDOR3_PARAM - &FIRST_ANDOR3_PARAM + 1)
+#define NUM_ANDOR3_PARAMS ((int)(&LAST_ANDOR3_PARAM - &FIRST_ANDOR3_PARAM + 1))
 
 /* Andor3 driver specific parameters */
 #define Andor3FrameRateString        "A3_FRAME_RATE"        /* asynFloat64  rw */
@@ -225,7 +225,7 @@ void andor3::imageTask()
             for(int x=0; x<maxFrames_; x++) {
                 if(drvBuffers_[x]) {
                     status = AT_QueueBuffer(handle_, drvBuffers_[x],
-                                            imageSize_);
+                                            (int)imageSize_);
                     if(status) {
                         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
                             "%s:%s: AT_QueueBuffer error: %d\n", 
@@ -258,13 +258,14 @@ void andor3::imageTask()
         getIntegerParam(NDArrayCallbacks, &callback);
         if(callback) {
             NDArray *pImage;
-            int      dims[2];
+            size_t dims[2];
+            int itemp;
             char encodingString[MAX_FEATURE_NAME_LEN];
             AT_64 stride;
             int pixelSize;
 
-            getIntegerParam(NDArraySizeX, &dims[0]);
-            getIntegerParam(NDArraySizeY, &dims[1]);
+            getIntegerParam(NDArraySizeX, &itemp); dims[0] = itemp;
+            getIntegerParam(NDArraySizeY, &itemp); dims[1] = itemp;
 
             getEnumString(Andor3PixelEncoding, encodingString, sizeof(encodingString));
             if (strcmp(encodingString, "Mono32")==0) {
@@ -288,7 +289,7 @@ void andor3::imageTask()
                     AT_U8 *p;
 
                     p = (AT_U8 *)pImage->pData;
-                    for(int x = 0; x < size; x += stride) {
+                    for(int x = 0; x < size; x += (int)stride) {
                         memcpy(p, image+x, dims[0]*pixelSize);
                         p += dims[0]*pixelSize;
                     }
@@ -296,9 +297,9 @@ void andor3::imageTask()
                     AT_U8 *enc = image;
                     unsigned short *dec = (unsigned short*)pImage->pData;
 
-                    for(int x = 0; x < size; x += stride) {
+                    for(int x = 0; x < size; x += (int)stride) {
                         enc = image + x;
-                        for (int j = 0; j < dims[0]/pixelSize; j++) {
+                        for (size_t j = 0; j < dims[0]/pixelSize; j++) {
                             *dec     = (*enc << 4) + (*(enc+1) & 0xf);
                             *(dec+1) = (*(enc+2)<<4) + ((*(enc+1) >> 4) & 0xf);
                             enc += 3;
@@ -807,9 +808,8 @@ int andor3::setAOI()
 int andor3::getAOI()
 {
     int status=0;
-    AT_64 at64Value;
-    int minX, sizeX, binX;
-    int minY, sizeY, binY;
+    AT_64 minX, sizeX, binX;
+    AT_64 minY, sizeY, binY;
     AT_64 sizeI;
     int binning;
     int binValues[] = {1, 2, 3, 4, 8};
@@ -819,13 +819,13 @@ int andor3::getAOI()
         "%s:%s: entry\n",
         driverName, functionName);
 
-    status |= AT_GetInt(handle_, L"AOIWidth",  &at64Value); sizeX = at64Value;
-    status |= AT_GetInt(handle_, L"AOILeft",   &at64Value); minX  = at64Value;
-    status |= AT_GetInt(handle_, L"AOIHeight", &at64Value); sizeY = at64Value;
-    status |= AT_GetInt(handle_, L"AOITop",    &at64Value); minY  = at64Value;
+    status |= AT_GetInt(handle_, L"AOIWidth",  &sizeX);
+    status |= AT_GetInt(handle_, L"AOILeft",   &minX);
+    status |= AT_GetInt(handle_, L"AOIHeight", &sizeY);
+    status |= AT_GetInt(handle_, L"AOITop",    &minY);
     status |= AT_GetEnumIndex(handle_, L"AOIBinning", &binning);
     asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
-        "%s:%s: minX=%d, sizeX=%d, minY=%d, sizeY=%d, binning=%d\n",
+        "%s:%s: minX=%lld, sizeX=%lld, minY=%lld, sizeY=%lld, binning=%d\n",
         driverName, functionName, minX, sizeX, minY, sizeY, binning);
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
@@ -834,19 +834,19 @@ int andor3::getAOI()
         return status;
     }
     binX = binValues[binning];
-    setIntegerParam(ADBinX, binX);
+    setIntegerParam(ADBinX, (int)binX);
     binY = binValues[binning];
-    setIntegerParam(ADBinY, binY);
-    status |= setIntegerParam(ADSizeX, sizeX*binX);
-    status |= setIntegerParam(ADMinX,  minX);
-    status |= setIntegerParam(ADSizeY, sizeY*binY);
-    status |= setIntegerParam(ADMinY,  minY);
+    setIntegerParam(ADBinY, (int)binY);
+    status |= setIntegerParam(ADSizeX, (int)(sizeX*binX));
+    status |= setIntegerParam(ADMinX,  (int)minX);
+    status |= setIntegerParam(ADSizeY, (int)(sizeY*binY));
+    status |= setIntegerParam(ADMinY,  (int)minY);
     status |= setIntegerParam(Andor3Binning, binning);
 
     /* set NDArray parameters */
-    status |= setIntegerParam(NDArraySizeX, sizeX/binX);
-    status |= setIntegerParam(NDArraySizeY, sizeY/binY);
-    status |= setIntegerParam(NDArraySize,  sizeX/binX * sizeY/binY * 2);
+    status |= setIntegerParam(NDArraySizeX, (int)(sizeX/binX));
+    status |= setIntegerParam(NDArraySizeY, (int)(sizeY/binY));
+    status |= setIntegerParam(NDArraySize,  (int)(sizeX/binX * sizeY/binY * 2));
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
             "%s:%s: error setting values, error=%d\n",
@@ -882,7 +882,7 @@ int andor3::allocateBuffers(void)
     if(drvBuffers_) {
         for(int x = 0; x < maxFrames_; x++) {
             #ifdef _WIN32
-               drvBuffers_[x] = (AT_U8*)_aligned_malloc(size, 8);
+               drvBuffers_[x] = (AT_U8*)_aligned_malloc((size_t)size, 8);
             #else
                 /* allocate 8 byte aligned buffer */
                 if(!posix_memalign((void **)&drvBuffers_[x], 8, size)) {
