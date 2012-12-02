@@ -13,33 +13,35 @@ include $(TOP)/configure/CONFIG
 INC += atcore.h
 
 ifeq (win32-x86, $(findstring win32-x86, $(T_A)))
-LIB_INSTALLS_WIN32    += ../os/win32-x86/atcorem.lib
-BIN_INSTALLS_WIN32    += ../os/win32-x86/atcore.dll
-LIB_INSTALLS_WIN32    += ../os/win32-x86/atmcd32m.lib
-BIN_INSTALLS_WIN32    += ../os/win32-x86/atmcd32d.dll
 BIN_INSTALLS_WIN32    += ../os/win32-x86/atblkbx.dll
-BIN_INSTALLS_WIN32    += ../os/win32-x86/atdevregcam.dll
 BIN_INSTALLS_WIN32    += ../os/win32-x86/atcl_bitflow.dll
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atcore.dll
+LIB_INSTALLS_WIN32    += ../os/win32-x86/atcorem.lib
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atdevregcam.dll
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atdevsimcam.dll
+BIN_INSTALLS_WIN32    += ../os/win32-x86/atmcd32d.dll
+LIB_INSTALLS_WIN32    += ../os/win32-x86/atmcd32m.lib
 
 else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
-LIB_INSTALLS_WIN32    += ../os/windows-x64/atcorem.lib
-BIN_INSTALLS_WIN32    += ../os/windows-x64/atcore.dll
-LIB_INSTALLS_WIN32    += ../os/windows-x64/atmcd64m.lib
-BIN_INSTALLS_WIN32    += ../os/windows-x64/atmcd64d.dll
 BIN_INSTALLS_WIN32    += ../os/windows-x64/atblkbx.dll
-BIN_INSTALLS_WIN32    += ../os/windows-x64/atdevregcam.dll
 BIN_INSTALLS_WIN32    += ../os/windows-x64/atcl_bitflow.dll
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atcore.dll
+LIB_INSTALLS_WIN32    += ../os/windows-x64/atcorem.lib
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atdevregcam.dll
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atdevsimcam.dll
+BIN_INSTALLS_WIN32    += ../os/windows-x64/atmcd64d.dll
+LIB_INSTALLS_WIN32    += ../os/windows-x64/atmcd64m.lib
 
 else ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
-LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3.5.30007.0
-LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
-LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatblkbx.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatblkbx.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatblkbx.so
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcl_bitflow.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcl_bitflow.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcl_bitflow.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so
@@ -54,15 +56,15 @@ LIB_INSTALLS_Linux += ../os/linux-x86_64/libatusb_libusb.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatusb_libusb.so
 
 else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
-LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.5.30007.0
-LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3
-LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so
 LIB_INSTALLS_Linux += ../os/linux-x86/libatblkbx.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86/libatblkbx.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86/libatblkbx.so
 LIB_INSTALLS_Linux += ../os/linux-x86/libatcl_bitflow.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86/libatcl_bitflow.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86/libatcl_bitflow.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.5.30007.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so
 LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so.3.5.30007.0
 LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so
