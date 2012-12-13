@@ -8,18 +8,15 @@ LIBRARY_IOC_Linux += andor3
 LIBRARY_IOC_WIN32 += andor3
 LIB_SRCS += andor3.cpp
 
-PROD_IOC_Linux += andor3App
+PROD_NAME = andor3App
+PROD_IOC_Linux += $(PROD_NAME)
 PROD_IOC_Linux += binTest
-PROD_IOC_WIN32 += andor3App
+PROD_IOC_WIN32 += $(PROD_NAME)
 PROD_IOC_WIN32 += binTest
 
 # <name>.dbd will be created from <name>Include.dbd
-DBD += andor3App.dbd
-andor3App_DBD += andor3Support.dbd
-andor3App_DBD += commonDriverSupport.dbd
-ifeq ($(USE_GRAPHICSMAGICK), YES)
-andor3App_DBD += NDFileMagick.dbd
-endif
+DBD += $(PROD_NAME).dbd
+$(PROD_NAME)_DBD += andor3Support.dbd
 DBD += andor3Support.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
