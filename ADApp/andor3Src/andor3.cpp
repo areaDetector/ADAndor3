@@ -454,6 +454,14 @@ int andor3::getFeature(int paramIndex, AT_H handle)
         }       
     }
 
+    /* reallocate image buffers if size changed */
+        if(!strcmp(info->featureNameMBS, "ImageSizeBytes")) {
+        asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+            "%s:%s: allocating buffers\n",
+            driverName, functionName);
+        allocateBuffers();
+    }
+
     /* error messages */
     if(status == -1) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
@@ -810,7 +818,6 @@ int andor3::getAOI()
     int status=0;
     AT_64 minX, sizeX, binX;
     AT_64 minY, sizeY, binY;
-    AT_64 sizeI;
     int binning;
     int binValues[] = {1, 2, 3, 4, 8};
     static const char *functionName = "getAOI";
@@ -844,22 +851,13 @@ int andor3::getAOI()
     status |= setIntegerParam(Andor3Binning, binning);
 
     /* set NDArray parameters */
-    status |= setIntegerParam(NDArraySizeX, (int)(sizeX/binX));
-    status |= setIntegerParam(NDArraySizeY, (int)(sizeY/binY));
-    status |= setIntegerParam(NDArraySize,  (int)(sizeX/binX * sizeY/binY * 2));
+    status |= setIntegerParam(NDArraySizeX, (int)sizeX);
+    status |= setIntegerParam(NDArraySizeY, (int)sizeY);
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
             "%s:%s: error setting values, error=%d\n",
             driverName, functionName, status);   
         return status;
-    }
-    /* reallocate image buffers if size changed */
-    status = AT_GetInt(handle_, L"ImageSizeBytes", &sizeI);
-    if(status == AT_SUCCESS && sizeI != imageSize_) {
-        asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
-            "%s:%s: allocating buffers\n",
-            driverName, functionName);
-        allocateBuffers();
     }
     return status;
 }
@@ -1360,6 +1358,7 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     status |= registerFeature(L"AOILeft",                  ATint,    ADMinX);
     status |= registerFeature(L"AOITop",                   ATint,    ADMinY);
     status |= registerFeature(L"AOIBinning",               ATenum,   Andor3Binning);
+    status |= registerFeature(L"ImageSizeBytes",           ATint ,   NDArraySize);
 
     status |= registerFeature(L"SensorCooling",            ATbool,   Andor3SensorCooling);
     status |= registerFeature(L"TargetSensorTemperature",  ATfloat,  ADTemperature);
