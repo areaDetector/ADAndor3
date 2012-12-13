@@ -15,6 +15,11 @@ PROD_IOC_WIN32 += binTest
 
 # <name>.dbd will be created from <name>Include.dbd
 DBD += andor3App.dbd
+andor3App_DBD += andor3Support.dbd
+andor3App_DBD += commonDriverSupport.dbd
+ifeq ($(USE_GRAPHICSMAGICK), YES)
+andor3App_DBD += NDFileMagick.dbd
+endif
 DBD += andor3Support.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
@@ -45,9 +50,7 @@ ifeq (windows-x64-debug, $(findstring windows-x64-debug, $(T_A)))
 USR_LDFLAGS_WIN32 += /NODEFAULTLIB:LIBCMT.lib
 endif
 
-
 # Use this line when building on Windows with debugging
-#include $(TOP)/ADApp/commonDriverMakefileNoMagick
 include $(TOP)/ADApp/commonDriverMakefile
 
 #=============================
