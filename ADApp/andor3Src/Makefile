@@ -25,23 +25,8 @@ binTestSrcs += binTest.cpp
 
 # Add locally compiled object code
 PROD_LIBS += andor3
-
-ifeq (win32-x86, $(findstring win32-x86, $(T_A)))
 PROD_LIBS_WIN32 += atcorem
-PROD_LIBS_WIN32 += atmcd32m
-
-else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
-PROD_LIBS_WIN32 += atcorem
-PROD_LIBS_WIN32 += atmcd64m
-
-else ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
-PROD_LIBS_Linux += atcore
-STATIC_BUILD=NO
-
-else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
-PROD_LIBS_Linux += atcore
-STATIC_BUILD=NO
-endif
+PROD_SYS_LIBS_Linux += atcore
 
 ifeq (windows-x64-debug, $(findstring windows-x64-debug, $(T_A)))
 USR_LDFLAGS_WIN32 += /NODEFAULTLIB:LIBCMT.lib
