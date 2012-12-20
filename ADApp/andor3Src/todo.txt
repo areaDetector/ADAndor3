@@ -1,7 +1,0 @@
-- 3x3 binning does not work - hangs Windows
-
-- Test on win32-x86, windows-x64, linux-x86, linux-x86_64.
-
-
-
-
