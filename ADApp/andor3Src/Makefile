@@ -11,8 +11,10 @@ LIB_SRCS += andor3.cpp
 PROD_NAME = andor3App
 PROD_IOC_Linux += $(PROD_NAME)
 PROD_IOC_Linux += binTest
+PROD_IOC_Linux += rateTest
 PROD_IOC_WIN32 += $(PROD_NAME)
 PROD_IOC_WIN32 += binTest
+PROD_IOC_WIN32 += rateTest
 
 # <name>.dbd will be created from <name>Include.dbd
 DBD += $(PROD_NAME).dbd
@@ -22,6 +24,7 @@ DBD += andor3Support.dbd
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 andor3App_SRCS += andor3App_registerRecordDeviceDriver.cpp andor3AppMain.cpp
 binTestSrcs += binTest.cpp
+binTestSrcs += rateTest.cpp
 
 # Add locally compiled object code
 PROD_LIBS += andor3
