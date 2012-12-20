@@ -805,7 +805,23 @@ int andor3::setAOI()
     }
     binX = binValues[binning];
     binY = binValues[binning];
-    status = AT_SetEnumIndex(handle_, L"AOIBinning", binning);
+    // There is a bug in the SDK.  
+    // It will crash if we try to set the current AOI is not an integer multiple of the binning
+    // Work around this by first setting the binning to 1x1 and the size of an integer multiple
+    // of the binning
+    int maxSizeX, maxSizeY;
+    int width, height;
+    status |= getIntegerParam(ADMaxSizeX, &maxSizeX);
+    status |= getIntegerParam(ADMaxSizeY, &maxSizeY);
+    width  = (maxSizeX / binX) * binX;
+    height = (maxSizeY / binY) * binY;
+    status |= AT_SetEnumIndex(handle_, L"AOIBinning", 0);
+    status |= AT_SetInt(handle_, L"AOILeft",   1);
+    status |= AT_SetInt(handle_, L"AOITop",    1);
+    status |= AT_SetInt(handle_, L"AOIWidth",  width); ;
+    status |= AT_SetInt(handle_, L"AOIHeight", height);
+    // End of bug workaround
+    status |= AT_SetEnumIndex(handle_, L"AOIBinning", binning);
     status |= AT_SetInt(handle_, L"AOIWidth",  sizeX/binX);
     status |= AT_SetInt(handle_, L"AOILeft",   minX);
     status |= AT_SetInt(handle_, L"AOIHeight", sizeY/binY);
