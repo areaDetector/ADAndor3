@@ -522,13 +522,13 @@ int andor3::setFeature(int paramIndex)
             if(status == AT_SUCCESS) {
                 if(i_value < i_min) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-                        "%s:%s setting %s to minimum value %d (was %d)\n",
+                        "%s:%s setting %s to minimum value %lld (was %d)\n",
                         driverName, functionName, info->featureNameMBS, 
                               i_min, i_value);
                     i_value = (int)i_min;
                 } else if(i_value > i_max) {
                     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-                        "%s:%s setting %s to max value %d (was %d)\n",
+                        "%s:%s setting %s to max value %lld (was %d)\n",
                         driverName, functionName, info->featureNameMBS, 
                               i_max, i_value);
                     i_value = (int)i_max;
@@ -1085,7 +1085,7 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     status = setIntegerParam(index, value);
     if(status) {
         asynPrint(pasynUser, ASYN_TRACE_ERROR,
-            "%s:%s: failed to write parameter %s = %f\n",
+            "%s:%s: failed to write parameter %s = %d\n",
             driverName, functionName, paramName, value);
         return (asynStatus)status;
     }
