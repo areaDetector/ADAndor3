@@ -16,8 +16,10 @@ int main(int argc, char* argv[])
   AT_64 iNumberDevices = 0;
   AT_H Hndl;
   double frameRate=48.0;
+  double maxFrameRate;
   double transferRate;
   int numFrames=320;
+  double exposureTime = 0.001;
   AT_64 imageSizeBytes;
   int bufferSize;
   AT_U8 **buffers;
@@ -25,24 +27,26 @@ int main(int argc, char* argv[])
   time_t tStart, tEnd;
   int i;
   
-  if (argc > 2) frameRate = atof(argv[2]);
-  if (argc > 1) numFrames = atoi(argv[1]);
+  if (argc > 3) exposureTime = atof(argv[3]);
+  if (argc > 2) frameRate    = atof(argv[2]);
+  if (argc > 1) numFrames    = atoi(argv[1]);
+
   cout << "frameRate=" << frameRate << " numFrames=" << numFrames << endl;
   
   cout << "Initialising ..." << endl;
   i_retCode = AT_InitialiseLibrary();
   if (i_retCode != AT_SUCCESS) {
-    cout << "Error initialising library" << endl;
+    cout << "Error initialising library, error=" << i_retCode << endl;
     return -1;
   }
   AT_GetInt(AT_HANDLE_SYSTEM, L"Device Count", &iNumberDevices);
   if (iNumberDevices <= 0) {
-    cout << "No cameras detected"<<endl;
+    cout << "No cameras detected, error=" << i_retCode <<endl;
     return -1;
   }
   i_retCode = AT_Open(0, &Hndl);
   if (i_retCode != AT_SUCCESS) {
-    cout << "Error condition, could not initialise camera" << endl;
+    cout << "Error condition, could not initialise camera, error=" << i_retCode << endl;
     return -1;
   }
 
@@ -82,13 +86,15 @@ int main(int argc, char* argv[])
     cout << "Error condition, could not set frame count=" << numFrames << endl;
   }
 
-  //Set the exposure time to 10 milliseconds
-  i_retCode = AT_SetFloat(Hndl, L"Exposure Time", 0.01);
+  //Set the exposure time
+  i_retCode = AT_SetFloat(Hndl, L"Exposure Time", exposureTime);
   if (i_retCode != AT_SUCCESS) {
-    cout << "Error condition, could not set exposure time to 10 ms" << endl;
+    cout << "Error condition, could not set exposure time to " << exposureTime << endl;
   }
 
   //Set the frame rate to frameRate
+  i_retCode = AT_GetFloatMax(Hndl, L"FrameRate", &maxFrameRate);
+  cout << "Exposure time=" << exposureTime << " maximum frame rate=" << maxFrameRate << endl;
   i_retCode = AT_SetFloat(Hndl, L"FrameRate", frameRate);
   if (i_retCode != AT_SUCCESS) {
     cout << "Error condition, could not set frame rate=" << frameRate << endl;
