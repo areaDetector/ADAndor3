@@ -24,7 +24,7 @@ DBD += andor3Support.dbd
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 andor3App_SRCS += andor3App_registerRecordDeviceDriver.cpp andor3AppMain.cpp
 binTestSrcs += binTest.cpp
-binTestSrcs += rateTest.cpp
+rateTestSrcs += rateTest.cpp
 
 # Add locally compiled object code
 PROD_LIBS += andor3
