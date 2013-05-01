@@ -2,12 +2,18 @@ TOP=../..
 include $(TOP)/configure/CONFIG
 #----------------------------------------
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
-#=============================
+
+#======== DETECTOR LIBRARY ==============
 
 LIBRARY_IOC_Linux += andor3
 LIBRARY_IOC_WIN32 += andor3
 LIB_SRCS += andor3.cpp
 
+DBD += andor3Support.dbd
+
+#====== DETECTOR APPLICATION ============
+
+ifeq ($(BUILD_APPS), YES)
 PROD_NAME = andor3App
 PROD_IOC_Linux += $(PROD_NAME)
 PROD_IOC_Linux += binTest
@@ -19,10 +25,9 @@ PROD_IOC_WIN32 += rateTest
 # <name>.dbd will be created from <name>Include.dbd
 DBD += $(PROD_NAME).dbd
 $(PROD_NAME)_DBD += andor3Support.dbd
-DBD += andor3Support.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
-andor3App_SRCS += andor3App_registerRecordDeviceDriver.cpp andor3AppMain.cpp
+$(PROD_NAME)_SRCS += $(PROD_NAME)_registerRecordDeviceDriver.cpp $(PROD_NAME)Main.cpp
 binTestSrcs += binTest.cpp
 rateTestSrcs += rateTest.cpp
 
@@ -37,6 +42,7 @@ endif
 
 # Use this line when building on Windows with debugging
 include $(TOP)/ADApp/commonDriverMakefile
+endif
 
 #=============================
 
