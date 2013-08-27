@@ -8,6 +8,8 @@ include $(TOP)/configure/CONFIG
 LIBRARY_IOC_Linux += andor3
 LIBRARY_IOC_WIN32 += andor3
 LIB_SRCS += andor3.cpp
+LIB_LIBS_WIN32 += atcorem
+LIB_SYS_LIBS_Linux += atcore
 
 DBD += andor3Support.dbd
 
