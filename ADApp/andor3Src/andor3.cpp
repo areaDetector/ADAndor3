@@ -34,12 +34,13 @@
 #include <epicsThread.h>
 #include <iocsh.h>
 #include <epicsString.h>
-#include <epicsExport.h>
 #include <epicsExit.h>
 
 #include <atcore.h>
 
 #include "ADDriver.h"
+
+#include <epicsExport.h>
 
 #define MAX_FEATURE_NAME_LEN 64
 
