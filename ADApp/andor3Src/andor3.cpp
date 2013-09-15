@@ -282,6 +282,7 @@ void andor3::imageTask()
                 pImage->uniqueId = count;
                 pImage->timeStamp = 631152000 + imageStamp.secPastEpoch +
                     (imageStamp.nsec / 1.0e9);
+                updateTimeStamp(&pImage->epicsTS);
 
                 AT_GetInt(handle_, L"AOIStride", &stride);
                 if ((strcmp(encodingString, "Mono12")==0) || 
