@@ -15,7 +15,7 @@ epicsEnvSet("NCHANS", "2048")
 # andor3Config(const char *portName, int cameraId, int maxBuffers,
 #              size_t maxMemory, int priority, int stackSize,
 #              int maxFrames)
-andor3Config("$(PORT)", $(CAMERA), 0, 0, 0, 100000, 100)
+andor3Config("$(PORT)", $(CAMERA), 0, 0, 0, 0, 100)
 dbLoadRecords("$(ADCORE)/db/ADBase.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 #dbLoadRecords("$(ADCORE)/db/NDFile.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 dbLoadRecords("$(ADANDOR3)/db/andor3.template",   "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
@@ -39,5 +39,5 @@ asynSetTraceIOMask("$(PORT)",0,4)
 iocInit()
 
 # save things every thirty seconds
-create_monitor_set("auto_settings.req", 30,"P=$(PREFIX),D=cam1:")
+create_monitor_set("auto_settings.req", 30,"P=$(PREFIX)")
 #asynSetTraceMask($(PORT), 0, 255)
