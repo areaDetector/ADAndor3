@@ -3,6 +3,12 @@ include $(TOP)/configure/CONFIG
 #----------------------------------------
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 
+
+# Need to figure this out; library is only shareable, so we say LIB_SYS_LIBS and it works
+ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
+SHARED_LIBRARIES=NO
+endif
+
 LIBRARY_IOC_Linux += andor3
 LIBRARY_IOC_WIN32 += andor3
 LIB_SRCS += andor3.cpp
