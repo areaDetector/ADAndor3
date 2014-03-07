@@ -1,6 +1,12 @@
 ADAndor3
-===========
-An <a href="http://www.aps.anl.gov/epics">EPICS</a> 
-<a href="http://cars.uchicago.edu/software/epics/areaDetector.html">areaDetector</a> 
-driver for sCMOS detectors from <a href="http://www.andor.com">
-Andor Technology</a> using Version 3 of the Andor Software Development Kit (SDK).
+========
+An 
+[EPICS](http://www.aps.anl.gov/epics/) 
+[areaDetector](http://cars.uchicago.edu/software/epics/areaDetector.html) 
+driver for sCMOS detectors from 
+[Andor Technology](http://www.andor.com)
+using Version 3 of the Andor Software Development Kit (SDK).
+
+Additional information:
+* [Documentation](http://cars.uchicago.edu/software/epics/andor3Doc.html).
+* [Release notes and links to source and binary releases](RELEASE.md).
