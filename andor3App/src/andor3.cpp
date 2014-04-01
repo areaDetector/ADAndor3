@@ -828,6 +828,9 @@ int andor3::setAOI()
     status |= AT_SetInt(handle_, L"AOILeft",   minX);
     status |= AT_SetInt(handle_, L"AOIHeight", sizeY/binY);
     status |= AT_SetInt(handle_, L"AOITop",    minY);
+
+    allocateBuffers();
+
     return status;
 }
 
@@ -915,7 +918,9 @@ int andor3::allocateBuffers(void)
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
             "%s:allocateBuffers: Failed to allocate and queue buffers\n",
             driverName);
-    }   
+    } else {
+      setIntegerParam(NDArraySize, size);
+    }  
     return status;
 }
 
