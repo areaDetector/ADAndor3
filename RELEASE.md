@@ -28,6 +28,7 @@ R2-0
 ----
 * Moved the repository to [Github](https://github.com/areaDetector/ADAndor3).
 * Re-organized the directory structure to separate the driver library from the example IOC application.
+* Fix to force buffer allocation when AOI changed.  Thanks to Matthew Pearson.
 
 
 R1-9-1 and earlier
