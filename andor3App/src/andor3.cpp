@@ -69,6 +69,10 @@ typedef struct {
 } featureInfo;
 
 
+/**
+ * Driver for Andor sCMOS cameras using version 3 of their SDK; inherits from ADDriver class in ADCore.
+ *
+ */
 class andor3 : public ADDriver {
 public:
     andor3(const char *portName, int cameraId, int maxBuffers, 
