@@ -24,7 +24,11 @@ files respectively, in the configure/ directory of the appropriate release of th
 Release Notes
 =============
 
-R2-0
+R2-1 (November XXX, 2014)
+----
+* Updated to version 3.7.3 of SDK on Linux and 3.9.3 on Windows
+
+R2-0 (April 4, 2014)
 ----
 * Moved the repository to [Github](https://github.com/areaDetector/ADAndor3).
 * Re-organized the directory structure to separate the driver library from the example IOC application.
@@ -35,3 +39,4 @@ R1-9-1 and earlier
 ------------------
 Release notes are part of the
 [areaDetector Release Notes](http://cars.uchicago.edu/software/epics/areaDetectorReleaseNotes.html).
+
