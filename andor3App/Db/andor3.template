@@ -2,6 +2,8 @@
 # Phillip Sorensen
 # October 8, 2012
 
+include "ADBase.template"
+
 ###############################################################################
 #  Note: The following are records defined in ADBase.template.                #
 #        We are changing some of the fields here to reflect valid values for  #
