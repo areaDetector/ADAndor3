@@ -9,3 +9,4 @@ $(P)$(R)A3ShutterMode
 $(P)$(R)SensorCooling
 $(P)$(R)TempControl
 $(P)$(R)FanSpeed
+file "ADBase_settings.req", P=$(P), R=$(R)
