@@ -24,10 +24,6 @@ files respectively, in the configure/ directory of the appropriate release of th
 Release Notes
 =============
 
-R2-2 (September 8, 2015)
-* Updated Makefile and st.cmd to be compatible with ADCore R2-4 and ADExample R2-0.
-
- 
 R2-1 (April 16, 2015)
 ----
 * Updated to SDK version 3.10.3 on Windows and Linux.

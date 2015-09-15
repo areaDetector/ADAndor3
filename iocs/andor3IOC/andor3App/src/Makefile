@@ -23,7 +23,7 @@ ifeq (windows-x64-debug, $(findstring windows-x64-debug, $(T_A)))
 USR_LDFLAGS_WIN32 += /NODEFAULTLIB:LIBCMT.lib
 endif
 
-include $(ADEXAMPLE)/exampleApp/commonDriverMakefile
+include $(ADCORE)/ADApp/commonDriverMakefile
 
 #=============================
 
