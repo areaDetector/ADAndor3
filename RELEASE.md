@@ -24,6 +24,12 @@ files respectively, in the configure/ directory of the appropriate release of th
 Release Notes
 =============
 
+R2-2 (July 4, 2015)
+----
+* Fixed medm screen layout for ADCore R3-0.
+* Fixed configure/RELEASE for IOC.
+
+
 R2-1 (April 16, 2015)
 ----
 * Updated to SDK version 3.10.3 on Windows and Linux.
