@@ -315,11 +315,7 @@ void andor3::imageTask()
                 }
 
                 getAttributes(pImage->pAttributeList);
-
-                unlock();
                 doCallbacksGenericPointer(pImage, NDArrayData, 0);
-                lock();
-
                 pImage->release();
             }
         }
