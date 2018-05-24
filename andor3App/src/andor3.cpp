@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
+#include <stdlib.h>
 
 #include <epicsEvent.h>
 #include <epicsTime.h>
