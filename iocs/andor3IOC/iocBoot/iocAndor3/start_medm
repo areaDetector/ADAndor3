@@ -1,0 +1,5 @@
+export EPICS_DISPLAY_PATH="/epics/support5/areaDetector/ADCore/ADApp/op/adl/:/epics/support5/asyn/opi/medm/"
+#/epics/extensions/bin/linux-x86_64/medm -x -macro "P=13ANDOR3:, R=cam1:" /epics/support4c/areaDetector/ADAndor3/andor3App/op/adl/Andor3.adl 
+/epics/extensions/bin/linux-x86_64/medm -x -macro "P=XF:18IDB-BI{Det:Neo}, R=cam1:" /epics/support4c/areaDetector/ADAndor3/andor3App/op/adl/Andor3.adl 
+#/epics/extensions/bin/linux-x86_64/medm  -macro "P=13PS1:, R=cam1:" /epics/support4b/areaDetector/ADAndor3/andor3App/op/adl/Andor3.adl 
+#../../bin/linux-x86_64/andor3App st.cmd
