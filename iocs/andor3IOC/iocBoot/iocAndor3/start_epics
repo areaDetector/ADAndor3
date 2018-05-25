@@ -1,0 +1,2 @@
+#medm -x -macro "P=13PS1:, R=cam1:" Andor3.adl &
+../../bin/linux-x86_64/andor3App st.cmd
