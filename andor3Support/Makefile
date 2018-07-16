@@ -16,14 +16,22 @@ else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
 LIB_INSTALLS_WIN32    += ../os/windows-x64/atcorem.lib
 
 else ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
-LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3.10.30003.5
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3.13.30034.0
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so.3.13.30034.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatdevregcam.so
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatusb_libusb10.so.3.13.30034.0
+LIB_INSTALLS_Linux += ../os/linux-x86_64/libatusb_libusb10.so
 
 else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
-LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.10.30003.5
+LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.13.30034.0
 LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3
 LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so.3.13.30034.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatdevregcam.so
+LIB_INSTALLS_Linux += ../os/linux-x86/libatusb_libusb10.so.3.13.30034.0
+LIB_INSTALLS_Linux += ../os/linux-x86/libatusb_libusb10.so
 
 endif
 
