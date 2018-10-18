@@ -19,11 +19,13 @@ DBD += andor3Support.dbd
 
 PROD_IOC_Linux += binTest
 PROD_IOC_Linux += rateTest
+PROD_IOC_Linux += listdevices
 PROD_IOC_WIN32 += binTest
 PROD_IOC_WIN32 += rateTest
 
 binTestSrcs  += binTest.cpp
 rateTestSrcs += rateTest.cpp
+listdevicesSrcs += listdevices.cpp
 
 # Add locally compiled object code
 PROD_LIBS += andor3
