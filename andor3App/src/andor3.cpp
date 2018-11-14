@@ -325,6 +325,7 @@ void andor3::imageTask()
         if((strcmp(modeString, "Fixed")==0) && number == total) {
             setShutter(0);
             AT_Command(handle_, L"AcquisitionStop");
+            AT_Flush(handle_);
             setIntegerParam(ADAcquire, 0);
         }
         callParamCallbacks();
@@ -1106,6 +1107,7 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
         } else {
             setShutter(0);
             status = AT_Command(handle_, L"AcquisitionStop");
+            AT_Flush(handle_);
         }
     }
     else if(index == ADImageMode) {
