@@ -285,7 +285,7 @@ void andor3::imageTask()
             }
             if(pImage) {
                 pImage->uniqueId = count;
-                pImage->timeStamp = 631152000 + imageStamp.secPastEpoch +
+                pImage->timeStamp = imageStamp.secPastEpoch +
                     (imageStamp.nsec / 1.0e9);
                 updateTimeStamp(&pImage->epicsTS);
 
