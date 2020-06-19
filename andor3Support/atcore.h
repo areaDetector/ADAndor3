@@ -6,7 +6,7 @@ typedef int AT_BOOL;
 #if defined(__BORLANDC__) && (__BORLANDC__<=0x540)
   typedef  __int64 AT_64;
 #elif defined(_MSC_VER) && (_MSC_VER<=1310)
-  typedef  __int64 AT_64;  
+  typedef  __int64 AT_64;
 #else
   typedef  long long AT_64;
 #endif
@@ -16,8 +16,8 @@ typedef wchar_t AT_WC;
 #if defined(__WIN32__) || defined(_WIN32)
 #include <windows.h>
 #define AT_EXP_CONV WINAPI
-#else 
-#define AT_EXP_CONV
+#else
+#define AT_EXP_CONV  __attribute__ ((visibility ("default")))
 #endif
 
 #define AT_INFINITE 0xFFFFFFFF
@@ -82,6 +82,7 @@ extern "C" {
  int AT_EXP_CONV AT_FinaliseLibrary();
 
  int AT_EXP_CONV AT_Open(int CameraIndex, AT_H *Hndl);
+ int AT_EXP_CONV AT_OpenDevice(const AT_WC* Device, AT_H *Hndl);
  int AT_EXP_CONV AT_Close(AT_H Hndl);
 
 typedef int (AT_EXP_CONV *FeatureCallback)(AT_H Hndl, const AT_WC* Feature, void* Context);
