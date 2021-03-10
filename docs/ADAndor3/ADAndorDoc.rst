@@ -1,33 +1,12 @@
-areaDetector Andor3 driver
+ADAndor3 
 ==========================
 
-.. container::
-
-   .. rubric:: areaDetector Andor3 driver
-      :name: areadetector-andor3-driver
-
-   .. rubric:: February 19, 2013
-      :name: february-19-2013
-
-   .. rubric:: Phillip Sorensen, Cornell University
-      :name: phillip-sorensen-cornell-university
-
-   .. rubric:: Mark Rivers, University of Chicago
-      :name: mark-rivers-university-of-chicago
+:author: Mark Rivers (University of Chicago), Phillip Sorensen (Cornell University)
 
 Table of Contents
 -----------------
 
--  `Introduction <#Introduction>`__
--  `Implementation of standard driver parameters <#StandardNotes>`__
--  `Andor specific parameters <#Driver_parameters>`__
--  `Unsupported standard driver parameters <#Unsupported>`__
--  `Usage <#Usage>`__
--  `Configuration <#Configuration>`__
--  `MEDM screen <#MEDM_screen>`__
--  `Restrictions <#Restrictions>`__
-
-.. _Introduction:
+.. contents:: Contents
 
 Introduction
 ------------
@@ -121,8 +100,6 @@ Note: Linux drivers and Bitflow based camera may require the removal of
 files /usr/local/lib/libatusb*. These files sometime interfere with
 Bitflow based cameras on Linux (per Andor).
 
-.. _StandardNotes:
-
 Implementation of standard driver parameters
 --------------------------------------------
 
@@ -185,8 +162,6 @@ the standard driver parameters.
   * - ADTemperatureActual
     - $(P)$(R)TemperatureActual
     - Reads the actual temperature of the camera.
-
-.. _Driver_parameters:
 
 Andor specific parameters
 -------------------------
@@ -413,14 +388,10 @@ Andor specific parameters
 The Andor driver implements the following parameters in addition to
 those in asynNDArrayDriver.h and ADDriver.h.
 
-.. _Unsupported:
-
 Unsupported standard driver parameters
 --------------------------------------
 
 ColorMode, ReverseX, and ReverseY are currently not supported.
-
-.. _Usage:
 
 Usage
 -----
@@ -428,8 +399,6 @@ Usage
 If any of the parameters set are out of range the driver will set them
 to the minimum or maximum allowed value for that parameter. The \_RBV
 value will indicate the actual value in effect.
-
-.. _Configuration:
 
 Configuration
 -------------
@@ -460,8 +429,6 @@ There an example IOC boot directory and startup script
 (`iocBoot/iocAndor3/st.cmd) <andor3_st_cmd.html>`__ provided with
 areaDetector.
 
-.. _MEDM_screen:
-
 MEDM screen
 -----------
 
@@ -478,8 +445,6 @@ lacks some fields that are important for the Andor.
       :name: andor3.adl
 
    |Andor3.png|
-
-.. _Restrictions:
 
 Restrictions
 ------------
