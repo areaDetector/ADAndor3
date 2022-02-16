@@ -1434,21 +1434,6 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
 
     /* shutdown on exit */
     epicsAtExit(c_shutdown, this);
-
-    /* Hard coded values for test weekend */
-    status  = AT_SetBool(handle_, L"Overlap", AT_TRUE);
-    status |= AT_SetBool(handle_, L"SpuriousNoiseFilter", AT_TRUE);
-
-    status |= AT_SetEnumIndex(handle_, L"PixelEncoding", 2);
-    status |= AT_SetEnumIndex(handle_, L"SimplePreAmpGainControl", 2);
- 
-    status |= AT_SetEnumIndex(handle_, L"PixelReadoutRate", 3);
-    
-    if(status) {
-        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-            "%s:%s: failed to set hard coded values: %d\n", 
-            driverName, functionName, status);
-    }
 }
 
 
