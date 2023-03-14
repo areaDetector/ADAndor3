@@ -8,5 +8,5 @@ driver for sCMOS detectors from
 using Version 3 of the Andor Software Development Kit (SDK).
 
 Additional information:
-* [Documentation](https://areaDetector.github.io/areaDetector/ADAndor3/andor3Doc.html).
+* [Documentation](https://areaDetector.github.io/areaDetector/ADAndor3/ADAndorDoc.html).
 * [Release notes and links to source and binary releases](RELEASE.md).
