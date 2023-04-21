@@ -1,14 +1,14 @@
 
 file {
-	name="/home/epics/devel/areaDetector-3-2/ADAndor3/andor3App/op/adl/Andor3.adl"
-	version=030109
+	name="/u/ar/mdunning/lcls/workspace/ADAndor3/ADAndor3-fork/andor3App/op/adl/Andor3.adl"
+	version=030117
 }
 display {
 	object {
-		x=292
-		y=47
+		x=697
+		y=85
 		width=715
-		height=1000
+		height=1060
 	}
 	clr=14
 	bclr=4
@@ -2200,4 +2200,210 @@ composite {
 	}
 	"composite name"=""
 	"composite file"="ADAttrFile.adl"
+}
+rectangle {
+	object {
+		x=465
+		y=929
+		width=125
+		height=21
+	}
+	"basic attribute" {
+		clr=2
+	}
+}
+text {
+	object {
+		x=498
+		y=930
+		width=60
+		height=20
+	}
+	"basic attribute" {
+		clr=54
+	}
+	textix="Gating/Intensifier"
+	align="horiz. centered"
+}
+rectangle {
+	object {
+		x=360
+		y=925
+		width=350
+		height=130
+	}
+	"basic attribute" {
+		clr=14
+		fill="outline"
+	}
+}
+"text update" {
+	object {
+		x=595
+		y=982
+		width=80
+		height=18
+	}
+	monitor {
+		chan="$(P)$(R)InsertionDelay_RBV"
+		clr=54
+		bclr=4
+	}
+	format="string"
+	limits {
+	}
+}
+"text update" {
+	object {
+		x=595
+		y=957
+		width=80
+		height=18
+	}
+	monitor {
+		chan="$(P)$(R)GateMode_RBV"
+		clr=54
+		bclr=4
+	}
+	format="string"
+	limits {
+	}
+}
+"text update" {
+	object {
+		x=595
+		y=1006
+		width=80
+		height=18
+	}
+	monitor {
+		chan="$(P)$(R)MCPIntelligate_RBV"
+		clr=54
+		bclr=4
+	}
+	format="string"
+	limits {
+	}
+}
+text {
+	object {
+		x=366
+		y=981
+		width=110
+		height=20
+	}
+	"basic attribute" {
+		clr=14
+	}
+	textix="Insertion Delay"
+	align="horiz. right"
+}
+text {
+	object {
+		x=415
+		y=1031
+		width=60
+		height=20
+	}
+	"basic attribute" {
+		clr=14
+	}
+	textix="MCP Gain"
+	align="horiz. right"
+}
+text {
+	object {
+		x=415
+		y=956
+		width=60
+		height=20
+	}
+	"basic attribute" {
+		clr=14
+	}
+	textix="Gate Mode"
+	align="horiz. right"
+}
+text {
+	object {
+		x=375
+		y=1005
+		width=100
+		height=20
+	}
+	"basic attribute" {
+		clr=14
+	}
+	textix="MCP Intelligate"
+	align="horiz. right"
+}
+menu {
+	object {
+		x=480
+		y=981
+		width=100
+		height=20
+	}
+	control {
+		chan="$(P)$(R)InsertionDelay"
+		clr=14
+		bclr=51
+	}
+}
+menu {
+	object {
+		x=480
+		y=956
+		width=100
+		height=20
+	}
+	control {
+		chan="$(P)$(R)GateMode"
+		clr=14
+		bclr=51
+	}
+}
+menu {
+	object {
+		x=480
+		y=1005
+		width=100
+		height=20
+	}
+	control {
+		chan="$(P)$(R)MCPIntelligate"
+		clr=14
+		bclr=51
+	}
+}
+"text entry" {
+	object {
+		x=480
+		y=1030
+		width=100
+		height=20
+	}
+	control {
+		chan="$(P)$(R)MCPGain"
+		clr=14
+		bclr=51
+	}
+	limits {
+	}
+}
+"text update" {
+	object {
+		x=595
+		y=1030
+		width=80
+		height=18
+	}
+	monitor {
+		chan="$(P)$(R)MCPGain_RBV"
+		clr=54
+		bclr=4
+	}
+	format="string"
+	limits {
+	}
 }
