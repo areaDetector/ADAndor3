@@ -9,4 +9,8 @@ $(P)$(R)A3ShutterMode
 $(P)$(R)SensorCooling
 $(P)$(R)TempControl
 $(P)$(R)FanSpeed
+$(P)$(R)GateMode
+$(P)$(R)InsertionDelay
+$(P)$(R)MCPIntelligate
+$(P)$(R)MCPGain
 file "ADBase_settings.req", P=$(P), R=$(R)

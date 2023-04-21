@@ -114,7 +114,11 @@ protected:
     int Andor3PreAmpGain;
     int Andor3NoiseFilter;
     int Andor3FanSpeed;
-    #define LAST_ANDOR3_PARAM Andor3FanSpeed
+    int Andor3GateMode;
+    int Andor3InsertionDelay;
+    int Andor3MCPGain;
+    int Andor3MCPIntelligate;
+    #define LAST_ANDOR3_PARAM Andor3MCPIntelligate
 private:
     int registerFeature(const AT_WC *feature, Andor3FeatureType type,
                         int paramIndex);
@@ -162,6 +166,10 @@ private:
 #define Andor3PreAmpGainString       "A3_PREAMP_GAIN"       /* asynInt32    rw */
 #define Andor3NoiseFilterString      "A3_NOISE_FILTER"      /* asynInt32    rw */
 #define Andor3FanSpeedString         "A3_FAN_SPEED"         /* asynInt32    rw */
+#define Andor3GateModeString         "A3_GATE_MODE"         /* asynInt32    rw */
+#define Andor3InsertionDelayString   "A3_INSERTION_DELAY"   /* asynInt32    rw */
+#define Andor3MCPGainString          "A3_MCP_GAIN"          /* asynInt32    rw */
+#define Andor3MCPIntelligateString   "A3_MCP_INTELLIGATE"   /* asynInt32    rw */
 
 static void c_shutdown(void *arg)
 {
@@ -652,6 +660,10 @@ void andor3::report(FILE *fp, int details)
     reportFeature(Andor3TempControl, fp, details);
     reportFeature(Andor3TempStatus, fp, details);
     reportFeature(Andor3FanSpeed, fp, details);
+    reportFeature(Andor3GateMode, fp, details);
+    reportFeature(Andor3InsertionDelay, fp, details);
+    reportFeature(Andor3MCPGain, fp, details);
+    reportFeature(Andor3MCPIntelligate, fp, details);
     
     ADDriver::report(fp, details);
 }    
@@ -1181,6 +1193,30 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     else if(index == Andor3NoiseFilter) {
         status = setFeature(Andor3NoiseFilter);
     }
+    else if(index == Andor3GateMode) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3GateMode);
+        }
+    }
+    else if(index == Andor3InsertionDelay) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3InsertionDelay);
+        }
+    }
+    else if(index == Andor3MCPGain) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3MCPGain);
+        }
+    }
+    else if(index == Andor3MCPIntelligate) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3MCPIntelligate);
+        }
+    }
     else {
         if(index < FIRST_ANDOR3_PARAM) {
             status = ADDriver::writeInt32(pasynUser, value);
@@ -1330,6 +1366,10 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     createParam(Andor3PreAmpGainString,       asynParamInt32,   &Andor3PreAmpGain);
     createParam(Andor3NoiseFilterString,      asynParamInt32,   &Andor3NoiseFilter);
     createParam(Andor3FanSpeedString,         asynParamInt32,   &Andor3FanSpeed);
+    createParam(Andor3GateModeString,         asynParamInt32,   &Andor3GateMode);
+    createParam(Andor3InsertionDelayString,   asynParamInt32,   &Andor3InsertionDelay);
+    createParam(Andor3MCPGainString,          asynParamInt32,   &Andor3MCPGain);
+    createParam(Andor3MCPIntelligateString,   asynParamInt32,   &Andor3MCPIntelligate);
 
     featureInfo_ = (featureInfo *)calloc(LAST_ANDOR3_PARAM+1, sizeof(featureInfo));
         
@@ -1411,6 +1451,10 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
     status |= registerFeature(L"MaxInterfaceTransferRate", ATfloat,  Andor3TransferRate);
     status |= registerFeature(L"SimplePreAmpGainControl",  ATenum,   Andor3PreAmpGain);
     status |= registerFeature(L"SpuriousNoiseFilter",      ATbool,   Andor3NoiseFilter);
+    status |= registerFeature(L"GateMode",                 ATenum,   Andor3GateMode);
+    status |= registerFeature(L"InsertionDelay",           ATenum,   Andor3InsertionDelay);
+    status |= registerFeature(L"MCPGain",                  ATint,    Andor3MCPGain);
+    status |= registerFeature(L"MCPIntelligate",           ATbool,   Andor3MCPIntelligate);
 
     if(status != AT_SUCCESS) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,

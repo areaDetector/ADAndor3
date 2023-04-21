@@ -342,3 +342,67 @@ record(stringin, "$(P)$(R)ControllerID")
    field(DTYP, "asynOctetRead")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_CONTROLLER_ID")
 }
+
+record(mbbo, "$(P)$(R)GateMode")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_GATE_MODE")
+}
+
+record(mbbi, "$(P)$(R)GateMode_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_GATE_MODE")
+   field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)InsertionDelay")
+{
+   field(PINI, "YES")
+   field(VAL,  "0")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_INSERTION_DELAY")
+}
+
+record(mbbi, "$(P)$(R)InsertionDelay_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_INSERTION_DELAY")
+   field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)MCPGain")
+{
+   field(PINI, "YES")
+   field(VAL,  "0")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_MCP_GAIN")
+}
+
+record(longin, "$(P)$(R)MCPGain_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_MCP_GAIN")
+   field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)MCPIntelligate")
+{
+   field(PINI, "YES")
+   field(VAL,  "0")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_MCP_INTELLIGATE")
+   field(ZNAM, "Off")
+   field(ONAM, "On")
+}
+
+record(bi, "$(P)$(R)MCPIntelligate_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))A3_MCP_INTELLIGATE")
+   field(SCAN, "I/O Intr")
+   field(ZNAM, "Off")
+   field(ONAM, "On")
+}
+
