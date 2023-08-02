@@ -1008,7 +1008,6 @@ int andor3::connectCamera(void)
             std::stringstream ss;
             ss << i;
             camIndexStr = ss.str();
-            //printf("serialNum_=%s, camIndexStr=%s, serialNumStr=%s, serialNumStr.length()=%zu\n", serialNum_.c_str(), camIndexStr.c_str(), serialNumStr.c_str(), serialNumStr.length());
 
             /* test all matching conditions */
             if ((serialNumStr == serialNum_) ||
