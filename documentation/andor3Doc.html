@@ -827,7 +827,7 @@
   <p>
     The Andor3 driver is created with the andor3Config command, either from C/C++ or
     from the EPICS IOC shell.</p>
-  <pre>int andor3Config(const char *portName, int cameraId,
+  <pre>int andor3Config(const char *portName, const char *cameraSerial,
                 int maxBuffers, size_t maxMemory,
                 int priority, int stackSize, int maxFrames)
   </pre>

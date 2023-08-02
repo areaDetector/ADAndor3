@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <sstream>
 
 #include <epicsEvent.h>
 #include <epicsTime.h>
@@ -76,7 +77,7 @@ typedef struct {
  */
 class andor3 : public ADDriver {
 public:
-    andor3(const char *portName, int cameraId, int maxBuffers, 
+    andor3(const char *portName, const char *cameraSerial, int maxBuffers, 
            size_t maxMemory, int priority, int stackSize, int maxFrames);
 
     /* override ADDriver methods */ 
@@ -136,7 +137,7 @@ private:
     
     featureInfo *featureInfo_;
     AT_H    handle_;
-    int     id_;
+    std::string serialNum_;
     int     maxFrames_;
     AT_U8 **drvBuffers_;    
     AT_64   imageSize_;
@@ -964,24 +965,75 @@ int andor3::freeBuffers()
 int andor3::connectCamera(void)
 {
     static const char *functionName = "connectCamera";
-
     int status = AT_SUCCESS;
-
+    long long deviceCount = 0;
+    bool cameraFound = false;
+    AT_WC serialNumWide[64]; 
+    char serialNumChar[64];
+    std::string serialNumStr, camIndexStr;
 
     /* disconnect any connected camera first */
     disconnectCamera();
 
-    asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
-        "%s:%s: connecting camera %d\n",
-        driverName, functionName, id_);
-
-    /* open handle to camera */
-    status = AT_Open(id_, &handle_);
-    if(status != AT_SUCCESS) {
+    /* get a count of valid devices */
+    status = AT_GetInt(AT_HANDLE_SYSTEM, L"Device Count", &deviceCount);
+    if (status != AT_SUCCESS) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-            "%s:%s: unable to open camera %d\n",
-            driverName, functionName, id_);
+            "%s:%s: unable to get device count\n",
+            driverName, functionName);
         return status;
+    }
+    asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+       "%s:%s: found %lld devices, searching for %s...\n",
+        driverName, functionName, deviceCount, serialNum_.c_str());
+
+    /* loop over detected devices, searching for serial number of our camera or matching camera number */
+    for (long long i=0; i<deviceCount; ++i) {
+        handle_ = AT_HANDLE_UNINITIALISED;
+        status = AT_Open(static_cast<int>(i), &handle_);
+        if (status != AT_SUCCESS) {
+            asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+               "%s:%s: device %lld: unable to open (%d)\n",
+                driverName, functionName, i, status);
+        } else {
+            /* for serial number matching, get serial number from camera & convert to string */
+            AT_GetString(handle_, L"SerialNumber", serialNumWide, 64);
+            wcstombs(serialNumChar, serialNumWide, 64);
+            asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+                "%s:%s: device %lld: serial number=%s\n", 
+                driverName, functionName, i, serialNumChar);
+            serialNumStr = serialNumChar;
+
+            /* for camera number matching, convert loop index to string */
+            std::stringstream ss;
+            ss << i;
+            camIndexStr = ss.str();
+            //printf("serialNum_=%s, camIndexStr=%s, serialNumStr=%s, serialNumStr.length()=%zu\n", serialNum_.c_str(), camIndexStr.c_str(), serialNumStr.c_str(), serialNumStr.length());
+
+            /* test all matching conditions */
+            if ((serialNumStr == serialNum_) ||
+                    ((serialNum_ == camIndexStr) && (serialNumStr.length() > 0))) {
+                cameraFound = true;
+                asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+                    "%s:%s: connected to camera %s\n",
+                    driverName, functionName, serialNum_.c_str());
+                break;
+            } else {
+                /* close camera if it's not the one we're looking for */
+                status = AT_Close(handle_);
+                if (status) {
+                    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                        "%s:%s: error closing camera %lld\n",
+                        driverName, functionName, i);
+                }
+            }
+        }
+    }
+        
+    if (!cameraFound) {
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+        "%s::%s: camera %s not found\n", driverName, functionName, serialNum_.c_str());
+      return status;
     }
 
     allocateBuffers();
@@ -1001,8 +1053,8 @@ int andor3::disconnectCamera(void)
     }
 
     asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
-        "%s:%s: disconnecting camera %d\n",
-        driverName, functionName, id_);
+        "%s:%s: disconnecting camera %s\n",
+        driverName, functionName, serialNum_.c_str());
 
     status = AT_GetBool(handle_, L"CameraAcquiring", &acquiring);
     if(status == AT_SUCCESS && acquiring) {
@@ -1014,8 +1066,8 @@ int andor3::disconnectCamera(void)
 
     if(status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-            "%s:%s: error closing camera %d\n",
-            driverName, functionName, id_);
+            "%s:%s: error closing camera %s\n",
+            driverName, functionName, serialNum_.c_str());
     }
 
     handle_ = 0;
@@ -1295,11 +1347,11 @@ asynStatus andor3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 
 
 
-extern "C" int andor3Config(const char *portName, int cameraId, int maxBuffers,
+extern "C" int andor3Config(const char *portName, const char *cameraSerial, int maxBuffers,
                             size_t maxMemory, int priority, int stackSize,
                             int maxFrames)
 {
-    new andor3(portName, cameraId, maxBuffers, maxMemory, priority, stackSize,
+    new andor3(portName, cameraSerial, maxBuffers, maxMemory, priority, stackSize,
                maxFrames);
     return(asynSuccess);
 }
@@ -1312,8 +1364,7 @@ extern "C" int andor3Config(const char *portName, int cameraId, int maxBuffers,
   * the parameters defined in this class, asynNDArrayDriver, and ADDriver.
   *
   * \param[in] portName The name of the asyn port driver to be created.
-  * \param[in] cameraId The id number of the Andor camera (see listdevices
-  *            example for number).
+  * \param[in] cameraSerial The serial number of the Andor camera.
   * \param[in] maxBuffers The maximum number of NDArray buffers that the
   *            NDArrayPool for this driver is allowed to allocate. Set this to
   *            -1 to allow an unlimited number of buffers.
@@ -1326,14 +1377,14 @@ extern "C" int andor3Config(const char *portName, int cameraId, int maxBuffers,
   *            ASYN_CANBLOCK is set in asynFlags.
   * \param[in] maxFrames The number of frame buffers to use in driver.
   */
-andor3::andor3(const char *portName, int cameraId, int maxBuffers,
+andor3::andor3(const char *portName, const char *cameraSerial, int maxBuffers,
                size_t maxMemory, int priority, int stackSize, int maxFrames)
     : ADDriver(portName, 1, NUM_ANDOR3_PARAMS, maxBuffers, maxMemory,
                asynEnumMask, asynEnumMask, 
                ASYN_CANBLOCK,  /* ASYN_CANBLOCK=1 ASYN_MULTIDEVICE=0 */
                1,              /* autoConnect=1 */
                priority, stackSize),
-      handle_(0), id_(cameraId), drvBuffers_(NULL), exiting_(0)
+      handle_(0), serialNum_(cameraSerial), drvBuffers_(NULL), exiting_(0)
 {
     static const char *functionName = "andor3";
     int status;
@@ -1458,8 +1509,8 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
 
     if(status != AT_SUCCESS) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-            "%s:%s: failed to register all features for camera %d\n",
-            driverName, functionName, id_);
+            "%s:%s: failed to register all features for camera %s\n",
+            driverName, functionName, serialNum_.c_str());
     }
 
     startEvent_ = epicsEventCreate(epicsEventEmpty);
@@ -1484,7 +1535,7 @@ andor3::andor3(const char *portName, int cameraId, int maxBuffers,
 
 /* Code for iocsh registration */
 static const iocshArg andor3ConfigArg0 = {"Port name", iocshArgString};
-static const iocshArg andor3ConfigArg1 = {"CameraId", iocshArgInt};
+static const iocshArg andor3ConfigArg1 = {"CameraSerial", iocshArgString};
 static const iocshArg andor3ConfigArg2 = {"maxBuffers", iocshArgInt};
 static const iocshArg andor3ConfigArg3 = {"maxMemory", iocshArgInt};
 static const iocshArg andor3ConfigArg4 = {"priority", iocshArgInt};
@@ -1500,7 +1551,7 @@ static const iocshArg * const andor3ConfigArgs[] =  {&andor3ConfigArg0,
 static const iocshFuncDef configAndor3 = {"andor3Config", 7, andor3ConfigArgs};
 static void configAndor3CallFunc(const iocshArgBuf *args)
 {
-    andor3Config(args[0].sval, args[1].ival, args[2].ival,  args[3].ival, 
+    andor3Config(args[0].sval, args[1].sval, args[2].ival,  args[3].ival, 
                  args[4].ival, args[5].ival, args[6].ival);
 }
 

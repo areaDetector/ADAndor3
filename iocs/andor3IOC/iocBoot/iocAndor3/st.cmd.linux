@@ -6,16 +6,16 @@ andor3App_registerRecordDeviceDriver(pdbbase)
 
 epicsEnvSet("PREFIX", "13ANDOR3:")
 epicsEnvSet("PORT",   "ANDOR")
-epicsEnvSet("CAMERA", "0")
+epicsEnvSet("CAMERA", "VSC-12345")
 epicsEnvSet("QSIZE",  "21")
 epicsEnvSet("XSIZE",  "2592")
 epicsEnvSet("YSIZE",  "2160")
 epicsEnvSet("NCHANS", "2048")
 
-# andor3Config(const char *portName, int cameraId, int maxBuffers,
+# andor3Config(const char *portName, const char *cameraSerial, int maxBuffers,
 #              size_t maxMemory, int priority, int stackSize,
 #              int maxFrames)
-andor3Config("$(PORT)", $(CAMERA), 0, 0, 0, 0, 10)
+andor3Config("$(PORT)", "$(CAMERA)", 0, 0, 0, 0, 10)
 #asynSetTraceMask("$(PORT)",0,255)
 asynSetTraceIOMask("$(PORT)",0,4)
 

@@ -448,7 +448,7 @@ C/C++ or from the EPICS IOC shell.
 
 ::
 
-   int andor3Config(const char *portName, int cameraId,
+   int andor3Config(const char *portName, const char *cameraSerial,
                    int maxBuffers, size_t maxMemory,
                    int priority, int stackSize, int maxFrames)
      
