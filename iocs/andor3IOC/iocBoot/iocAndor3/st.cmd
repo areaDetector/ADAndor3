@@ -8,8 +8,8 @@ andor3App_registerRecordDeviceDriver(pdbbase)
 epicsEnvSet("PREFIX", "13ANDOR3:")
 # The port name for the detector
 epicsEnvSet("PORT",   "ANDOR")
-# The camera number in the system
-epicsEnvSet("CAMERA", "0")
+# The camera serial number
+epicsEnvSet("CAMERA", "VSC-12345")
 # The queue size for all plugins
 epicsEnvSet("QSIZE",  "21")
 # The maximim image width; used for row profiles in the NDPluginStats plugin
@@ -23,10 +23,10 @@ epicsEnvSet("CBUFFS", "500")
 # The search path for database files
 epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db")
 
-# andor3Config(const char *portName, int cameraId, int maxBuffers,
+# andor3Config(const char *portName, const char *cameraSerial, int maxBuffers,
 #              size_t maxMemory, int priority, int stackSize,
 #              int maxFrames)
-andor3Config("$(PORT)", $(CAMERA), 0, 0, 0, 0, 100)
+andor3Config("$(PORT)", "$(CAMERA)", 0, 0, 0, 0, 100)
 dbLoadRecords("$(ADANDOR3)/db/andor3.template", "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 
 # Create a standard arrays plugin
