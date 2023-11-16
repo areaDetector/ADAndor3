@@ -211,7 +211,6 @@ void andor3::shutdown(void)
 
 void andor3::imageTask()
 {
-    epicsTimeStamp imageStamp;
     int status;
     AT_U8  *image;
     int size;
@@ -260,7 +259,6 @@ void andor3::imageTask()
                 driverName, functionName, status);
             continue;
         }
-        epicsTimeGetCurrent(&imageStamp);
 
         getIntegerParam(ADNumImagesCounter, &number);
         number++;
@@ -294,9 +292,9 @@ void andor3::imageTask()
             }
             if(pImage) {
                 pImage->uniqueId = count;
-                pImage->timeStamp = imageStamp.secPastEpoch +
-                    (imageStamp.nsec / 1.0e9);
                 updateTimeStamp(&pImage->epicsTS);
+                pImage->timeStamp = pImage->epicsTS.secPastEpoch +
+                    (pImage->epicsTS.nsec / 1.0e9);
 
                 AT_GetInt(handle_, L"AOIStride", &stride);
                 if ((strcmp(encodingString, "Mono12")==0) || 
