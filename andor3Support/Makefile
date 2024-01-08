@@ -15,18 +15,19 @@ LIB_INSTALLS_WIN32    += ../os/win32-x86/atcorem.lib
 else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
 LIB_INSTALLS_WIN32    += ../os/windows-x64/atcorem.lib
 
-else ifeq (linux-x86_64, $(findstring linux-x86_64, $(T_A)))
-LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3.15.30092.2
-LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
-LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
+else ifeq ($(OS_CLASS), Linux)
+  ifeq ($(ARCH_CLASS), x86_64)
+  LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3.15.30092.2
+  LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
+  LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
 
-else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
-LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.15.30092.2
-LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3
-LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so
+  else
+  LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.15.30092.2
+  LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3
+  LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so
 
+  endif
 endif
-
 #=============================
 
 include $(TOP)/configure/RULES
