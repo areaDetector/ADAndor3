@@ -21,7 +21,7 @@ else ifeq ($(OS_CLASS), Linux)
   LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so.3
   LIB_INSTALLS_Linux += ../os/linux-x86_64/libatcore.so
 
-  else
+  else ifeq ($(ARCH_CLASS), x86)
   LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3.15.30092.2
   LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so.3
   LIB_INSTALLS_Linux += ../os/linux-x86/libatcore.so
