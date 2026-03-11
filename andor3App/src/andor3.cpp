@@ -119,7 +119,20 @@ protected:
     int Andor3InsertionDelay;
     int Andor3MCPGain;
     int Andor3MCPIntelligate;
-    #define LAST_ANDOR3_PARAM Andor3MCPIntelligate
+    int Andor3DDGOutputDelay;
+    int Andor3DDGOutputEnable;
+    int Andor3DDGOutputPolarity;
+    int Andor3DDGOutputSelect;
+    int Andor3DDGOutputStepEnable;
+    int Andor3DDGOutputWidth;
+    int Andor3DDGStepEnabled;
+    int Andor3DDGStepDelayMode;
+    int Andor3DDGStepDelayCoefficientA;
+    int Andor3DDGStepDelayCoefficientB;
+    int Andor3DDGStepWidthMode;
+    int Andor3DDGStepWidthCoefficientA;
+    int Andor3DDGStepWidthCoefficientB;
+    #define LAST_ANDOR3_PARAM Andor3DDGStepWidthCoefficientB
 private:
     int registerFeature(const AT_WC *feature, Andor3FeatureType type,
                         int paramIndex);
@@ -147,30 +160,43 @@ private:
 #define NUM_ANDOR3_PARAMS ((int)(&LAST_ANDOR3_PARAM - &FIRST_ANDOR3_PARAM + 1))
 
 /* Andor3 driver specific parameters */
-#define Andor3FrameRateString        "A3_FRAME_RATE"        /* asynFloat64  rw */
-#define Andor3PixelEncodingString    "A3_PIXEL_ENCODING"    /* asynInt32    rw */
-#define Andor3FullAOIControlString   "A3_FULL_AOI_CONTROL"  /* asynInt32    ro */
-#define Andor3BinningString          "A3_BINNING"           /* asynInt32    rw */
-#define Andor3ShutterModeString      "A3_SHUTTER_MODE"      /* asynInt32    rw */
-#define Andor3SoftwareTriggerString  "A3_SOFTWARE_TRIGGER"  /* asynInt32    wo */
-#define Andor3SensorCoolingString    "A3_SENSOR_COOLING"    /* asynInt32    rw */
-#define Andor3TempControlString      "A3_TEMP_CONTROL"      /* asynInt32    rw */
-#define Andor3TempStatusString       "A3_TEMP_STATUS"       /* asynInt32    ro */
-#define Andor3SerialNumberString     "A3_SERIAL_NUMBER"     /* asynOctet    ro */
-#define Andor3FirmwareVersionString  "A3_FIRMWARE_VERSION"  /* asynOctet    ro */
-#define Andor3SoftwareVersionString  "A3_SOFTWARE_VERSION"  /* asynOctet    ro */
-#define Andor3ControllerIDString     "A3_CONTROLLER_ID"     /* asynOctet    ro */
-#define Andor3OverlapString          "A3_OVERLAP"           /* asynInt32    rw */
-#define Andor3ReadoutRateString      "A3_READOUT_RATE"      /* asynInt32    rw */
-#define Andor3ReadoutTimeString      "A3_READOUT_TIME"      /* asynFloat64  rw */
-#define Andor3TransferRateString     "A3_TRANSFER_RATE"     /* asynFloat64  rw */
-#define Andor3PreAmpGainString       "A3_PREAMP_GAIN"       /* asynInt32    rw */
-#define Andor3NoiseFilterString      "A3_NOISE_FILTER"      /* asynInt32    rw */
-#define Andor3FanSpeedString         "A3_FAN_SPEED"         /* asynInt32    rw */
-#define Andor3GateModeString         "A3_GATE_MODE"         /* asynInt32    rw */
-#define Andor3InsertionDelayString   "A3_INSERTION_DELAY"   /* asynInt32    rw */
-#define Andor3MCPGainString          "A3_MCP_GAIN"          /* asynInt32    rw */
-#define Andor3MCPIntelligateString   "A3_MCP_INTELLIGATE"   /* asynInt32    rw */
+#define Andor3FrameRateString           "A3_FRAME_RATE"            /* asynFloat64  rw */
+#define Andor3PixelEncodingString       "A3_PIXEL_ENCODING"        /* asynInt32    rw */
+#define Andor3FullAOIControlString      "A3_FULL_AOI_CONTROL"      /* asynInt32    ro */
+#define Andor3BinningString             "A3_BINNING"               /* asynInt32    rw */
+#define Andor3ShutterModeString         "A3_SHUTTER_MODE"          /* asynInt32    rw */
+#define Andor3SoftwareTriggerString     "A3_SOFTWARE_TRIGGER"      /* asynInt32    wo */
+#define Andor3SensorCoolingString       "A3_SENSOR_COOLING"        /* asynInt32    rw */
+#define Andor3TempControlString         "A3_TEMP_CONTROL"          /* asynInt32    rw */
+#define Andor3TempStatusString          "A3_TEMP_STATUS"           /* asynInt32    ro */
+#define Andor3SerialNumberString        "A3_SERIAL_NUMBER"         /* asynOctet    ro */
+#define Andor3FirmwareVersionString     "A3_FIRMWARE_VERSION"      /* asynOctet    ro */
+#define Andor3SoftwareVersionString     "A3_SOFTWARE_VERSION"      /* asynOctet    ro */
+#define Andor3ControllerIDString        "A3_CONTROLLER_ID"         /* asynOctet    ro */
+#define Andor3OverlapString             "A3_OVERLAP"               /* asynInt32    rw */
+#define Andor3ReadoutRateString         "A3_READOUT_RATE"          /* asynInt32    rw */
+#define Andor3ReadoutTimeString         "A3_READOUT_TIME"          /* asynFloat64  rw */
+#define Andor3TransferRateString        "A3_TRANSFER_RATE"         /* asynFloat64  rw */
+#define Andor3PreAmpGainString          "A3_PREAMP_GAIN"           /* asynInt32    rw */
+#define Andor3NoiseFilterString         "A3_NOISE_FILTER"          /* asynInt32    rw */
+#define Andor3FanSpeedString            "A3_FAN_SPEED"             /* asynInt32    rw */
+#define Andor3GateModeString            "A3_GATE_MODE"             /* asynInt32    rw */
+#define Andor3InsertionDelayString      "A3_INSERTION_DELAY"       /* asynInt32    rw */
+#define Andor3MCPGainString             "A3_MCP_GAIN"              /* asynInt32    rw */
+#define Andor3MCPIntelligateString      "A3_MCP_INTELLIGATE"       /* asynInt32    rw */
+#define Andor3DDGOutputDelayString      "A3_DDG_OUTPUT_DELAY"      /* asynInt32    rw */
+#define Andor3DDGOutputEnableString     "A3_DDG_OUTPUT_ENABLE"     /* asynInt32    rw */
+#define Andor3DDGOutputPolarityString   "A3_DDG_OUTPUT_POLARITY"   /* asynInt32    rw */
+#define Andor3DDGOutputSelectString     "A3_DDG_OUTPUT_SELECT"     /* asynInt32    rw */
+#define Andor3DDGOutputStepEnableString "A3_DDG_OUTPUT_STEP_ENABLE"/* asynInt32    rw */
+#define Andor3DDGOutputWidthString      "A3_DDG_OUTPUT_WIDTH"      /* asynInt32    rw */
+#define Andor3DDGStepEnabledString      "A3_DDG_STEP_ENABLE"       /* asynInt32    rw */
+#define Andor3DDGStepDelayModeString    "A3_DDG_STEP_DELAY_MODE"   /* asynInt32    rw */
+#define Andor3DDGStepDelayCoeffAString  "A3_DDG_STEP_DELAY_COEFF_A"/* asynFloat64  rw */
+#define Andor3DDGStepDelayCoeffBString  "A3_DDG_STEP_DELAY_COEFF_B"/* asynFloat64  rw */
+#define Andor3DDGStepWidthModeString    "A3_DDG_STEP_WIDTH_MODE"   /* asynInt32    rw */
+#define Andor3DDGStepWidthCoeffAString  "A3_DDG_STEP_WIDTH_COEFF_A"/* asynFloat64  rw */
+#define Andor3DDGStepWidthCoeffBString  "A3_DDG_STEP_WIDTH_COEFF_B"/* asynFloat64  rw */
 
 static void c_shutdown(void *arg)
 {
@@ -660,6 +686,19 @@ void andor3::report(FILE *fp, int details)
     reportFeature(Andor3InsertionDelay, fp, details);
     reportFeature(Andor3MCPGain, fp, details);
     reportFeature(Andor3MCPIntelligate, fp, details);
+    reportFeature(Andor3DDGOutputDelay, fp, details);
+    reportFeature(Andor3DDGOutputEnable, fp, details);
+    reportFeature(Andor3DDGOutputPolarity, fp, details);
+    reportFeature(Andor3DDGOutputSelect, fp, details);
+    reportFeature(Andor3DDGOutputStepEnable, fp, details);
+    reportFeature(Andor3DDGOutputWidth, fp, details);
+    reportFeature(Andor3DDGStepEnabled, fp, details);
+    reportFeature(Andor3DDGStepDelayMode, fp, details);
+    reportFeature(Andor3DDGStepDelayCoefficientA, fp, details);
+    reportFeature(Andor3DDGStepDelayCoefficientB, fp, details);
+    reportFeature(Andor3DDGStepWidthMode, fp, details);
+    reportFeature(Andor3DDGStepWidthCoefficientA, fp, details);
+    reportFeature(Andor3DDGStepWidthCoefficientB, fp, details);
     
     ADDriver::report(fp, details);
 }    
@@ -1193,10 +1232,10 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     else if 
        ((index == Andor3Binning) ||
-        (index == ADMinX)  ||
-        (index == ADSizeX) ||
-        (index == ADMinY)  ||
-        (index == ADSizeY)) {
+       (index == ADMinX)  ||
+       (index == ADSizeX) ||
+       (index == ADMinY)  ||
+       (index == ADSizeY)) {
         status = setAOI();
     }
     else if(index == ADReadStatus) {
@@ -1263,6 +1302,68 @@ asynStatus andor3::writeInt32(asynUser *pasynUser, epicsInt32 value)
             status = setFeature(Andor3MCPIntelligate);
         }
     }
+    else if(index == Andor3DDGOutputDelay) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGOutputDelay);
+        }
+    }
+    else if(index == Andor3DDGOutputEnable) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGOutputEnable);
+        }
+    }
+    else if(index == Andor3DDGOutputPolarity) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGOutputPolarity);
+        }
+    }
+    else if(index == Andor3DDGOutputSelect) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGOutputSelect);
+            if (status == AT_SUCCESS)
+            {
+                status  = getFeature(Andor3DDGOutputEnable);
+                status |= getFeature(Andor3DDGOutputDelay);
+                status |= getFeature(Andor3DDGOutputPolarity);
+                status |= getFeature(Andor3DDGOutputWidth);
+                status |= getFeature(Andor3DDGOutputStepEnable);
+            }
+        }
+    }
+    else if(index == Andor3DDGOutputStepEnable) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGOutputStepEnable);
+        }
+    }
+    else if(index == Andor3DDGOutputWidth) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGOutputWidth);
+        }
+    }
+    else if(index == Andor3DDGStepEnabled) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGStepEnabled);
+        }
+    }
+    else if(index == Andor3DDGStepDelayMode) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGStepDelayMode);
+        }
+    }
+    else if(index == Andor3DDGStepWidthMode) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGStepWidthMode);
+        }
+    }
     else {
         if(index < FIRST_ANDOR3_PARAM) {
             status = ADDriver::writeInt32(pasynUser, value);
@@ -1317,6 +1418,30 @@ asynStatus andor3::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     }
     else if(index == Andor3FrameRate) {
         status = setFeature(Andor3FrameRate);
+    }
+    else if(index == Andor3DDGStepDelayCoefficientA) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGStepDelayCoefficientA);
+        }
+    }
+    else if(index == Andor3DDGStepDelayCoefficientB) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGStepDelayCoefficientB);
+        }
+    }
+    else if(index == Andor3DDGStepWidthCoefficientA) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGStepWidthCoefficientA);
+        }
+    }
+    else if(index == Andor3DDGStepWidthCoefficientB) {
+        featureInfo *info = &featureInfo_[index];
+        if (info->isImplemented) {
+            status = setFeature(Andor3DDGStepWidthCoefficientB);
+        }
     }
     else {    
         if(index < FIRST_ANDOR3_PARAM) {
@@ -1391,31 +1516,44 @@ andor3::andor3(const char *portName, const char *cameraSerial, int maxBuffers,
     }
     
     /* create andor specific parameters */
-    createParam(Andor3FrameRateString,        asynParamFloat64, &Andor3FrameRate);
-    createParam(Andor3PixelEncodingString,    asynParamInt32,   &Andor3PixelEncoding);
-    createParam(Andor3FullAOIControlString,   asynParamInt32,   &Andor3FullAOIControl);
-    createParam(Andor3BinningString,          asynParamInt32,   &Andor3Binning);
-    createParam(Andor3ShutterModeString,      asynParamInt32,   &Andor3ShutterMode);
-    createParam(Andor3SoftwareTriggerString,  asynParamInt32,   &Andor3SoftwareTrigger);
-    createParam(Andor3SensorCoolingString,    asynParamInt32,   &Andor3SensorCooling);
-    createParam(Andor3TempControlString,      asynParamInt32,   &Andor3TempControl);
-    createParam(Andor3TempStatusString,       asynParamInt32,   &Andor3TempStatus);
-    createParam(Andor3SerialNumberString,     asynParamOctet,   &Andor3SerialNumber);
-    createParam(Andor3FirmwareVersionString,  asynParamOctet,   &Andor3FirmwareVersion);
-    createParam(Andor3SoftwareVersionString,  asynParamOctet,   &Andor3SoftwareVersion);
-    createParam(Andor3ControllerIDString,     asynParamOctet,   &Andor3ControllerID);
-    createParam(Andor3OverlapString,          asynParamInt32,   &Andor3Overlap);
-    createParam(Andor3ReadoutRateString,      asynParamInt32,   &Andor3ReadoutRate);
-    createParam(Andor3ReadoutTimeString,      asynParamFloat64, &Andor3ReadoutTime);
-    createParam(Andor3TransferRateString,     asynParamFloat64, &Andor3TransferRate);
-    createParam(Andor3PreAmpGainString,       asynParamInt32,   &Andor3PreAmpGain);
-    createParam(Andor3NoiseFilterString,      asynParamInt32,   &Andor3NoiseFilter);
-    createParam(Andor3FanSpeedString,         asynParamInt32,   &Andor3FanSpeed);
-    createParam(Andor3GateModeString,         asynParamInt32,   &Andor3GateMode);
-    createParam(Andor3InsertionDelayString,   asynParamInt32,   &Andor3InsertionDelay);
-    createParam(Andor3MCPGainString,          asynParamInt32,   &Andor3MCPGain);
-    createParam(Andor3MCPIntelligateString,   asynParamInt32,   &Andor3MCPIntelligate);
-
+    createParam(Andor3FrameRateString,          asynParamFloat64, &Andor3FrameRate);
+    createParam(Andor3PixelEncodingString,      asynParamInt32,   &Andor3PixelEncoding);
+    createParam(Andor3FullAOIControlString,     asynParamInt32,   &Andor3FullAOIControl);
+    createParam(Andor3BinningString,            asynParamInt32,   &Andor3Binning);
+    createParam(Andor3ShutterModeString,        asynParamInt32,   &Andor3ShutterMode);
+    createParam(Andor3SoftwareTriggerString,    asynParamInt32,   &Andor3SoftwareTrigger);
+    createParam(Andor3SensorCoolingString,      asynParamInt32,   &Andor3SensorCooling);
+    createParam(Andor3TempControlString,        asynParamInt32,   &Andor3TempControl);
+    createParam(Andor3TempStatusString,         asynParamInt32,   &Andor3TempStatus);
+    createParam(Andor3SerialNumberString,       asynParamOctet,   &Andor3SerialNumber);
+    createParam(Andor3FirmwareVersionString,    asynParamOctet,   &Andor3FirmwareVersion);
+    createParam(Andor3SoftwareVersionString,    asynParamOctet,   &Andor3SoftwareVersion);
+    createParam(Andor3ControllerIDString,       asynParamOctet,   &Andor3ControllerID);
+    createParam(Andor3OverlapString,            asynParamInt32,   &Andor3Overlap);
+    createParam(Andor3ReadoutRateString,        asynParamInt32,   &Andor3ReadoutRate);
+    createParam(Andor3ReadoutTimeString,        asynParamFloat64, &Andor3ReadoutTime);
+    createParam(Andor3TransferRateString,       asynParamFloat64, &Andor3TransferRate);
+    createParam(Andor3PreAmpGainString,         asynParamInt32,   &Andor3PreAmpGain);
+    createParam(Andor3NoiseFilterString,        asynParamInt32,   &Andor3NoiseFilter);
+    createParam(Andor3FanSpeedString,           asynParamInt32,   &Andor3FanSpeed);
+    createParam(Andor3GateModeString,           asynParamInt32,   &Andor3GateMode);
+    createParam(Andor3InsertionDelayString,     asynParamInt32,   &Andor3InsertionDelay);
+    createParam(Andor3MCPGainString,            asynParamInt32,   &Andor3MCPGain);
+    createParam(Andor3MCPIntelligateString,     asynParamInt32,   &Andor3MCPIntelligate);
+    createParam(Andor3DDGOutputDelayString,     asynParamInt32,   &Andor3DDGOutputDelay);
+    createParam(Andor3DDGOutputEnableString,    asynParamInt32,   &Andor3DDGOutputEnable);
+    createParam(Andor3DDGOutputPolarityString,  asynParamInt32,   &Andor3DDGOutputPolarity);
+    createParam(Andor3DDGOutputSelectString,    asynParamInt32,   &Andor3DDGOutputSelect);
+    createParam(Andor3DDGOutputStepEnableString,asynParamInt32,   &Andor3DDGOutputStepEnable);
+    createParam(Andor3DDGOutputWidthString,     asynParamInt32,   &Andor3DDGOutputWidth);
+    createParam(Andor3DDGStepEnabledString,     asynParamInt32,   &Andor3DDGStepEnabled);
+    createParam(Andor3DDGStepDelayModeString,   asynParamInt32,   &Andor3DDGStepDelayMode);
+    createParam(Andor3DDGStepDelayCoeffAString, asynParamFloat64, &Andor3DDGStepDelayCoefficientA);
+    createParam(Andor3DDGStepDelayCoeffBString, asynParamFloat64, &Andor3DDGStepDelayCoefficientB);
+    createParam(Andor3DDGStepWidthModeString,   asynParamInt32,   &Andor3DDGStepWidthMode);
+    createParam(Andor3DDGStepWidthCoeffAString, asynParamFloat64, &Andor3DDGStepWidthCoefficientA);
+    createParam(Andor3DDGStepWidthCoeffBString, asynParamFloat64, &Andor3DDGStepWidthCoefficientB);
+    
     featureInfo_ = (featureInfo *)calloc(LAST_ANDOR3_PARAM+1, sizeof(featureInfo));
         
     /* set read-only parameters */
@@ -1496,10 +1634,24 @@ andor3::andor3(const char *portName, const char *cameraSerial, int maxBuffers,
     status |= registerFeature(L"MaxInterfaceTransferRate", ATfloat,  Andor3TransferRate);
     status |= registerFeature(L"SimplePreAmpGainControl",  ATenum,   Andor3PreAmpGain);
     status |= registerFeature(L"SpuriousNoiseFilter",      ATbool,   Andor3NoiseFilter);
+
     status |= registerFeature(L"GateMode",                 ATenum,   Andor3GateMode);
     status |= registerFeature(L"InsertionDelay",           ATenum,   Andor3InsertionDelay);
     status |= registerFeature(L"MCPGain",                  ATint,    Andor3MCPGain);
     status |= registerFeature(L"MCPIntelligate",           ATbool,   Andor3MCPIntelligate);
+    status |= registerFeature(L"DDGOutputDelay",           ATint,    Andor3DDGOutputDelay);
+    status |= registerFeature(L"DDGOutputEnable",          ATbool,   Andor3DDGOutputEnable);
+    status |= registerFeature(L"DDGOutputPolarity",        ATenum,   Andor3DDGOutputPolarity);
+    status |= registerFeature(L"DDGOutputSelector",        ATenum,   Andor3DDGOutputSelect);
+    status |= registerFeature(L"DDGOutputStepEnable",      ATbool,   Andor3DDGOutputStepEnable);
+    status |= registerFeature(L"DDGOutputWidth",           ATint,    Andor3DDGOutputWidth);
+    status |= registerFeature(L"DDGStepEnabled",           ATbool,   Andor3DDGStepEnabled);
+    status |= registerFeature(L"DDGStepDelayMode",         ATenum,   Andor3DDGStepDelayMode);
+    status |= registerFeature(L"DDGStepDelayCoefficientA", ATfloat,  Andor3DDGStepDelayCoefficientA);
+    status |= registerFeature(L"DDGStepDelayCoefficientB", ATfloat,  Andor3DDGStepDelayCoefficientB);
+    status |= registerFeature(L"DDGStepWidthMode",         ATenum,   Andor3DDGStepWidthMode);
+    status |= registerFeature(L"DDGStepWidthCoefficientA", ATfloat,  Andor3DDGStepWidthCoefficientA);
+    status |= registerFeature(L"DDGStepWidthCoefficientB", ATfloat,  Andor3DDGStepWidthCoefficientB);
 
     if(status != AT_SUCCESS) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,

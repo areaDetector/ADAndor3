@@ -13,4 +13,17 @@ $(P)$(R)GateMode
 $(P)$(R)InsertionDelay
 $(P)$(R)MCPIntelligate
 $(P)$(R)MCPGain
+$(P)$(R)DDGOutputDelay
+$(P)$(R)DDGOutputEnable
+$(P)$(R)DDGOutputPolarity
+$(P)$(R)DDGOutputSelect
+$(P)$(R)DDGOutputStepEnable
+$(P)$(R)DDGOutputWidth
+$(P)$(R)DDGStepEnabled
+$(P)$(R)DDGStepDelayMode
+$(P)$(R)DDGStepDelayCoefficientA
+$(P)$(R)DDGStepDelayCoefficientB
+$(P)$(R)DDGStepWidthMode
+$(P)$(R)DDGStepWidthCoefficientA
+$(P)$(R)DDGStepWidthCoefficientB
 file "ADBase_settings.req", P=$(P), R=$(R)

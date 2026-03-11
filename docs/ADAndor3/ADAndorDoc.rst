@@ -424,6 +424,114 @@ Andor specific parameters
     - A3_MCP_INTELLIGATE
     - MCPIntelligate, MCPIntelligate_RBV
     - bo, bi
+  * - **Digital Delay Generator (DDG) Control**
+  * - Andor3DDGOutputDelay
+    - asynInt32
+    - R/W
+    - Configures the delay (in picoseconds) for the currently selected DDG output.
+    - A3_DDG_OUTPUT_DELAY
+    - DDGOutputDelay, DDGOutputDelay_RBV
+    - ao, ai
+  * - Andor3DDGOutputEnable
+    - asynInt32
+    - R/W
+    - Enable or disable the currently selected DDG output. Has no effect if "Gater" output is selected.
+    - A3_DDG_OUTPUT_ENABLE
+    - DDGOutputEnable, DDGOutputEnable_RBV
+    - bo, bi
+  * - Andor3DDGOutputPolarity
+    - asynInt32
+    - R/W
+    - Configures the polarity for the currently selected DDG output.
+      Choices for iStar are 0 (Negative) and 1 (Positive).
+    - A3_DDG_OUTPUT_POLARITY
+    - DDGOutputPolarity, DDGOutputPolarity_RBV
+    - mbbo, mbbi
+  * - Andor3DDGOutputSelect
+    - asynInt32
+    - R/W
+    - Selects the DDG output that you subsequently wish to configure using the DDG output features.
+      Choices for iStar are 0 (Gater), 1 (Output A), 2 (Output B), and 3 (Output C).
+    - A3_DDG_OUTPUT_SELECT
+    - DDGOutputSelect, DDGOutputSelect_RBV
+    - mbbo, mbbi
+  * - Andor3DDGOutputStepEnable
+    - asynInt32
+    - R/W
+    - Enable or disable DDG step mode for the currently selected DDG output.
+    - A3_DDG_OUTPUT_STEP_ENABLE
+    - DDGOutputStepEnable, DDGOutputStepEnable_RBV
+    - bo, bi
+  * - Andor3DDGOutputWidth
+    - asynInt32
+    - R/W
+    - Configures the width (in picoseconds) for the currently selected DDG output.
+    - A3_DDG_OUTPUT_WIDTH
+    - DDGOutputWidth, DDGOutputWidth_RBV
+    - ao, ai
+  * - Andor3DDGStepEnabled
+    - asynInt32
+    - R/O
+    - Indicates when DDG step is enabled.
+    - A3_DDG_STEP_ENABLED
+    - DDGStepEnabled, DDGStepEnabled_RBV
+    - bo, bi
+  * - Andor3DDGStepDelayMode
+    - asynInt32
+    - R/W
+    - Configures the mode for incrementing the DDG step delay.
+      Choices for iStar are 0 (Off), 1 (Constant), 2 (Exponential), 3 (Logarithmic).
+    - A3_DDG_STEP_DELAY_MODE
+    - DDGStepDelayMode, DDGStepDelayMode_RBV
+    - mbbo, mbbi
+  * - Andor3DDGStepDelayCoefficientA
+    - asynFloat64
+    - R/W
+    - Coefficient A for calculating the DDG step delay. The step delay is calculated as follows:
+      |br| If DDGStepDelayMode=Constant then StepDelay = A |br|
+      If DDGStepDelayMode=Exponential then StepDelay = A*exp(B*Step) |br|
+      If DDGStepDelayMode=Logarithmic then StepDelay = A*log(B*Step)
+    - A3_DDG_STEP_DELAY_COEFFICIENT_A
+    - DDGStepDelayCoefficientA, DDGStepDelayCoefficientA_RBV
+    - ao, ai
+  * - Andor3DDGStepDelayCoefficientB
+    - asynFloat64
+    - R/W
+    - Coefficient B for calculating the DDG step delay. The step delay is calculated as follows:
+      |br| If DDGStepDelayMode=Constant then StepDelay = A |br|
+      If DDGStepDelayMode=Exponential then StepDelay = A*exp(B*Step) |br|
+      If DDGStepDelayMode=Logarithmic then StepDelay = A*log(B*Step)
+    - A3_DDG_STEP_DELAY_COEFFICIENT_B
+    - DDGStepDelayCoefficientB, DDGStepDelayCoefficientB_RBV
+    - ao, ai
+  * - Andor3DDGStepWidthMode
+    - asynInt32
+    - R/W
+    - Configures the mode for incrementing the DDG step width.
+      Choices for iStar are 0 (Off), 1 (Constant), 2 (Exponential), 3 (Logarithmic).
+    - A3_DDG_STEP_WIDTH_MODE
+    - DDGStepWidthMode, DDGStepWidthMode_RBV
+    - mbbo, mbbi
+  * - Andor3DDGStepWidthCoefficientA
+    - asynFloat64
+    - R/W
+    - Coefficient A for calculating the DDG step width. The step width is calculated as follows:
+      |br| If DDGStepWidthMode=Constant then StepWidth = A |br|
+      If DDGStepWidthMode=Exponential then StepWidth = A*exp(B*Step) |br|
+      If DDGStepWidthMode=Logarithmic then StepWidth = A*log(B*Step)
+    - A3_DDG_STEP_WIDTH_COEFFICIENT_A
+    - DDGStepWidthCoefficientA, DDGStepWidthCoefficientA_RBV
+    - ao, ai
+  * - Andor3DDGStepWidthCoefficientB
+    - asynFloat64
+    - R/W
+    - Coefficient B for calculating the DDG step width. The step width is calculated as follows:
+      |br| If DDGStepWidthMode=Constant then StepWidth = A |br|
+      If DDGStepWidthMode=Exponential then StepWidth = A*exp(B*Step) |br|
+      If DDGStepWidthMode=Logarithmic then StepWidth = A*log(B*Step)
+    - A3_DDG_STEP_WIDTH_COEFFICIENT_B
+    - DDGStepWidthCoefficientB, DDGStepWidthCoefficientB_RBV
+    - ao, ai
 
 The Andor driver implements the following parameters in addition to
 those in asynNDArrayDriver.h and ADDriver.h.
